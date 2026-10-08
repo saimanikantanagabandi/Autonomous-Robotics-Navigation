@@ -1,0 +1,171 @@
+<?xml version="1.0" ?>
+<sdf version="1.6">
+  <world name="gps_denied_warehouse">
+
+    <!-- Physics Engine Configuration -->
+    <physics name="default_physics" default="0" type="ode">
+      <max_step_size>0.001</max_step_size>
+      <real_time_factor>1</real_time_factor>
+      <real_time_update_rate>1000</real_time_update_rate>
+    </physics>
+
+    <!-- Sun / Ambient Dim Lighting (Simulating Enclosed Facility) -->
+    <include>
+      <uri>model://sun</uri>
+    </include>
+
+    <!-- Ground Plane -->
+    <include>
+      <uri>model://ground_plane</uri>
+    </include>
+
+    <!-- Enclosing Outer Boundary Walls (40m x 40m) -->
+    <!-- North Wall -->
+    <model name="wall_north">
+      <static>true</static>
+      <pose>0 20 1.5 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>40 0.4 3.0</size></box></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>40 0.4 3.0</size></box></geometry>
+          <material><ambient>0.6 0.6 0.6 1</ambient></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- South Wall -->
+    <model name="wall_south">
+      <static>true</static>
+      <pose>0 -20 1.5 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>40 0.4 3.0</size></box></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>40 0.4 3.0</size></box></geometry>
+          <material><ambient>0.6 0.6 0.6 1</ambient></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- East Wall -->
+    <model name="wall_east">
+      <static>true</static>
+      <pose>20 0 1.5 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>0.4 40 3.0</size></box></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>0.4 40 3.0</size></box></geometry>
+          <material><ambient>0.6 0.6 0.6 1</ambient></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- West Wall -->
+    <model name="wall_west">
+      <static>true</static>
+      <pose>-20 0 1.5 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>0.4 40 3.0</size></box></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>0.4 40 3.0</size></box></geometry>
+          <material><ambient>0.6 0.6 0.6 1</ambient></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Interior Structural Pillars / Visual Features for VSLAM -->
+    <model name="pillar_1">
+      <static>true</static>
+      <pose>8 8 1.5 0 0 0</pose>
+      <link name="link">
+        <collision name="col"><geometry><cylinder><radius>0.6</radius><length>3.0</length></cylinder></geometry></collision>
+        <visual name="vis">
+          <geometry><cylinder><radius>0.6</radius><length>3.0</length></cylinder></geometry>
+          <material><ambient>0.2 0.4 0.8 1</ambient></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="pillar_2">
+      <static>true</static>
+      <pose>-8 8 1.5 0 0 0</pose>
+      <link name="link">
+        <collision name="col"><geometry><cylinder><radius>0.6</radius><length>3.0</length></cylinder></geometry></collision>
+        <visual name="vis">
+          <geometry><cylinder><radius>0.6</radius><length>3.0</length></cylinder></geometry>
+          <material><ambient>0.8 0.4 0.2 1</ambient></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="pillar_3">
+      <static>true</static>
+      <pose>8 -8 1.5 0 0 0</pose>
+      <link name="link">
+        <collision name="col"><geometry><cylinder><radius>0.6</radius><length>3.0</length></cylinder></geometry></collision>
+        <visual name="vis">
+          <geometry><cylinder><radius>0.6</radius><length>3.0</length></cylinder></geometry>
+          <material><ambient>0.3 0.7 0.3 1</ambient></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="pillar_4">
+      <static>true</static>
+      <pose>-8 -8 1.5 0 0 0</pose>
+      <link name="link">
+        <collision name="col"><geometry><cylinder><radius>0.6</radius><length>3.0</length></cylinder></geometry></collision>
+        <visual name="vis">
+          <geometry><cylinder><radius>0.6</radius><length>3.0</length></cylinder></geometry>
+          <material><ambient>0.7 0.3 0.7 1</ambient></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Corridor Partition Partitions -->
+    <model name="partition_center">
+      <static>true</static>
+      <pose>0 0 1.0 0 0 0</pose>
+      <link name="link">
+        <collision name="col"><geometry><box><size>10 0.5 2.0</size></box></geometry></collision>
+        <visual name="vis">
+          <geometry><box><size>10 0.5 2.0</size></box></geometry>
+          <material><ambient>0.5 0.5 0.5 1</ambient></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Barrels / Crate Obstacles -->
+    <model name="crate_stack_1">
+      <static>true</static>
+      <pose>12 2 0.75 0 0 0.3</pose>
+      <link name="link">
+        <collision name="col"><geometry><box><size>1.5 1.5 1.5</size></box></geometry></collision>
+        <visual name="vis">
+          <geometry><box><size>1.5 1.5 1.5</size></box></geometry>
+          <material><ambient>0.6 0.4 0.2 1</ambient></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="crate_stack_2">
+      <static>true</static>
+      <pose>-12 -4 0.75 0 0 -0.5</pose>
+      <link name="link">
+        <collision name="col"><geometry><box><size>1.8 1.2 1.5</size></box></geometry></collision>
+        <visual name="vis">
+          <geometry><box><size>1.8 1.2 1.5</size></box></geometry>
+          <material><ambient>0.6 0.4 0.2 1</ambient></material>
+        </visual>
+      </link>
+    </model>
+
+  </world>
+</sdf>

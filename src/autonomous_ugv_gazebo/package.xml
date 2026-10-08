@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>autonomous_ugv_gazebo</name>
+  <version>1.0.0</version>
+  <description>Gazebo simulation environment for GPS-denied autonomous UGV testing</description>
+  <maintainer email="dev@defence-autonomy.local">Autonomy Team</maintainer>
+  <license>Apache-2.0</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <exec_depend>gazebo_ros</exec_depend>
+  <exec_depend>gazebo_ros_pkgs</exec_depend>
+  <exec_depend>autonomous_ugv_description</exec_depend>
+  <exec_depend>robot_state_publisher</exec_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

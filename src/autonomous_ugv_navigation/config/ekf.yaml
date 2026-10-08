@@ -1,0 +1,96 @@
+# ==============================================================================
+# Robot Localization Extended Kalman Filter (EKF) Configuration
+# ==============================================================================
+# Fuses multi-rate sensor streams for GPS-denied state estimation:
+#   1. Wheel Odometry:  50 Hz  (velocity: vx, vy, vtheta)
+#   2. 9-DoF IMU:       100 Hz (angular velocity: vroll, vpitch, vyaw; lin accel: ax)
+#   3. Visual Odometry: 15 Hz  (pose: x, y, yaw from RTAB-Map RGB-D)
+#
+# State Vector: [x, y, z, roll, pitch, yaw, vx, vy, vz, vroll, vpitch, vyaw, ax, ay, az]
+# ==============================================================================
+
+ekf_filter_node:
+  ros__parameters:
+    use_sim_time: true
+    frequency: 30.0
+    sensor_timeout: 0.1
+    two_d_mode: true
+    transform_time_offset: 0.0
+    transform_timeout: 0.0
+    print_diagnostics: true
+    debug: false
+
+    # Coordinate Frames
+    map_frame: map
+    odom_frame: odom
+    base_link_frame: base_footprint
+    world_frame: odom # Local odom frame (fuses odom + IMU + VO)
+
+    # --------------------------------------------------------------------------
+    # SENSOR 1: WHEEL ENCODER ODOMETRY (/wheel/odom)
+    # --------------------------------------------------------------------------
+    # Crucial engineering decision: We DO NOT fuse raw wheel [x, y] position
+    # because wheel slip causes catastrophic dead-reckoning drift.
+    # Instead, we fuse instantaneous linear velocity vx and yaw rate vyaw.
+    # --------------------------------------------------------------------------
+    odom0: /wheel/odom
+    odom0_config: [false, false, false,  # x, y, z
+                   false, false, false,  # roll, pitch, yaw
+                   true,  false, false,  # vx, vy, vz
+                   false, false, true,   # vroll, vpitch, vyaw
+                   false, false, false]  # ax, ay, az
+    odom0_queue_size: 10
+    odom0_differential: false
+    odom0_relative: false
+
+    # --------------------------------------------------------------------------
+    # SENSOR 2: 9-DoF IMU (/imu/data)
+    # --------------------------------------------------------------------------
+    # Fuses high-rate angular velocity (vyaw) and forward acceleration (ax).
+    # Corrects for rapid rotations where visual odometry loses tracking.
+    # --------------------------------------------------------------------------
+    imu0: /imu/data
+    imu0_config: [false, false, false,  # x, y, z
+                  false, false, false,  # roll, pitch, yaw
+                  false, false, false,  # vx, vy, vz
+                  false, false, true,   # vroll, vpitch, vyaw
+                  true,  false, false]  # ax, ay, az
+    imu0_queue_size: 10
+    imu0_differential: false
+    imu0_relative: true
+    imu0_remove_gravitational_acceleration: true
+
+    # --------------------------------------------------------------------------
+    # SENSOR 3: VISUAL ODOMETRY / VSLAM (/vo/odom)
+    # --------------------------------------------------------------------------
+    # Fuses position [x, y] and heading [yaw] computed from RTAB-Map RGB-D features.
+    # Provides absolute drift correction for wheel slippage.
+    # --------------------------------------------------------------------------
+    odom1: /vo/odom
+    odom1_config: [true,  true,  false,  # x, y, z
+                   false, false, true,   # roll, pitch, yaw
+                   false, false, false,  # vx, vy, vz
+                   false, false, false,  # vroll, vpitch, vyaw
+                   false, false, false]  # ax, ay, az
+    odom1_queue_size: 10
+    odom1_differential: true
+    odom1_relative: false
+
+    # Process Noise Covariance (Q matrix)
+    process_noise_covariance: [
+      0.05, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+      0.0,  0.05, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+      0.0,  0.0,  0.06, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+      0.0,  0.0,  0.0,  0.03, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+      0.0,  0.0,  0.0,  0.0,  0.03, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+      0.0,  0.0,  0.0,  0.0,  0.0,  0.06, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+      0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.02, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+      0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.02, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+      0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.04, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+      0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.01, 0.0,  0.0,  0.0,  0.0,  0.0,
+      0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.01, 0.0,  0.0,  0.0,  0.0,
+      0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.02, 0.0,  0.0,  0.0,
+      0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.01, 0.0,  0.0,
+      0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.01, 0.0,
+      0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.015
+    ]

@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Autonomous UGV // GPS-Denied Mission Control</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700;800&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
+</head>
+<body>
+  <!-- Top Navigation / Tactical HUD Header -->
+  <header class="hud-header">
+    <div class="hud-brand">
+      <div class="radar-pulse-icon"></div>
+      <div>
+        <h1 class="brand-title">AUTONOMOUS UGV MISSION CONTROL</h1>
+        <div class="brand-sub">GPS-DENIED TACTICAL NAVIGATION STACK &bull; ROS 2 // RTAB-MAP // EKF FUSION</div>
+      </div>
+    </div>
+
+    <!-- Status Badges -->
+    <div class="status-badge-container">
+      <div class="badge badge-danger blink" id="badge-gps">
+        <span class="badge-dot"></span> GPS: DENIED / JAMMED
+      </div>
+      <div class="badge badge-success" id="badge-vslam">
+        <span class="badge-dot"></span> VSLAM: 15 Hz TRACKING
+      </div>
+      <div class="badge badge-info" id="badge-ekf">
+        <span class="badge-dot"></span> EKF: 15-STATE NOMINAL
+      </div>
+      <div class="badge badge-ws" id="badge-ws">
+        <span class="badge-dot"></span> LINK: ONLINE
+      </div>
+      <div class="mission-timer" id="mission-clock">T+ 00:00</div>
+    </div>
+  </header>
+
+  <!-- Main HUD Layout Grid -->
+  <main class="hud-grid">
+    
+    <!-- LEFT PANEL: State Estimation, Benchmarks & Watchdog -->
+    <section class="hud-panel left-panel">
+      <!-- State Estimation Card -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-icon">🎯</span>
+          <h3>STATE ESTIMATION</h3>
+          <span class="tag tag-cyan">ROBOT_LOCALIZATION</span>
+        </div>
+        <div class="card-body">
+          <div class="state-table">
+            <div class="table-row table-head">
+              <span>AXIS</span>
+              <span class="col-gt">GROUND TRUTH</span>
+              <span class="col-ekf">EKF FUSED</span>
+              <span class="col-odom">RAW ODOM</span>
+            </div>
+            <div class="table-row">
+              <span class="axis-lbl">X POS</span>
+              <span id="gt-x">0.00 m</span>
+              <span id="ekf-x" class="highlight-cyan">0.00 m</span>
+              <span id="odom-x" class="highlight-red">0.00 m</span>
+            </div>
+            <div class="table-row">
+              <span class="axis-lbl">Y POS</span>
+              <span id="gt-y">0.00 m</span>
+              <span id="ekf-y" class="highlight-cyan">0.00 m</span>
+              <span id="odom-y" class="highlight-red">0.00 m</span>
+            </div>
+            <div class="table-row">
+              <span class="axis-lbl">HEADING (θ)</span>
+              <span id="gt-theta">0.0°</span>
+              <span id="ekf-theta" class="highlight-cyan">0.0°</span>
+              <span id="odom-theta" class="highlight-red">0.0°</span>
+            </div>
+            <div class="table-row">
+              <span class="axis-lbl">LINEAR (v)</span>
+              <span id="gt-v">0.00 m/s</span>
+              <span id="ekf-v" class="highlight-cyan">0.00 m/s</span>
+              <span id="odom-v" class="highlight-red">0.00 m/s</span>
+            </div>
+            <div class="table-row">
+              <span class="axis-lbl">ANGULAR (ω)</span>
+              <span id="gt-omega">0.00 rad/s</span>
+              <span id="ekf-omega" class="highlight-cyan">0.00 rad/s</span>
+              <span id="odom-omega" class="highlight-red">0.00 rad/s</span>
+            </div>
+          </div>
+
+          <!-- Covariance 2-Sigma metrics -->
+          <div class="covariance-metric-box">
+            <div class="metric-mini">
+              <span class="lbl">COVARIANCE 2σ RADIUS</span>
+              <span class="val highlight-yellow" id="cov-radius">±0.25 m</span>
+            </div>
+            <div class="metric-mini">
+              <span class="lbl">FILTER TRACE Tr(P)</span>
+              <span class="val" id="cov-trace">0.142</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Benchmark Accuracy Card -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-icon">📊</span>
+          <h3>BENCHMARK DRIFT QUANTIFICATION</h3>
+          <span class="tag tag-green">ATE / RPE</span>
+        </div>
+        <div class="card-body">
+          <div class="metrics-hero">
+            <div class="metric-hero-item">
+              <span class="lbl">CUMULATIVE DRIFT REDUCTION</span>
+              <span class="hero-val highlight-green" id="drift-reduction-pct">+83.9%</span>
+            </div>
+          </div>
+
+          <div class="benchmark-grid">
+            <div class="bm-box">
+              <span class="bm-title">EKF ESTIMATION RMSE</span>
+              <span class="bm-val highlight-cyan" id="ekf-rmse">0.24 m</span>
+              <span class="bm-sub" id="ekf-max-err">Max: 0.52 m</span>
+            </div>
+            <div class="bm-box">
+              <span class="bm-title">DEAD-RECKONING RMSE</span>
+              <span class="bm-val highlight-red" id="odom-rmse">2.68 m</span>
+              <span class="bm-sub" id="odom-max-err">Max: 4.15 m</span>
+            </div>
+          </div>
+
+          <!-- Mini Live Error Sparkline -->
+          <div class="sparkline-container">
+            <div class="sparkline-header">
+              <span>REAL-TIME POSITION DRIFT OVER TIME (m)</span>
+              <span class="sparkline-legend">
+                <span class="leg-dot leg-red"></span> Raw Odom
+                <span class="leg-dot leg-cyan"></span> EKF Fused
+              </span>
+            </div>
+            <canvas id="errorChartCanvas" width="380" height="90"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Watchdog Log Terminal -->
+      <div class="card watchdog-card">
+        <div class="card-header">
+          <span class="card-icon">🛡️</span>
+          <h3>INTEGRITY MONITOR & WATCHDOG</h3>
+          <span class="tag tag-amber" id="watchdog-status-tag">ACTIVE</span>
+        </div>
+        <div class="card-body terminal-body" id="watchdogTerminal">
+          <div class="log-line log-info"><span class="log-t">[SYS]</span> Watchdog integrity monitor initialized.</div>
+          <div class="log-line log-info"><span class="log-t">[SYS]</span> GPS satellite lock denied. Switching to EKF + VSLAM.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CENTER PANEL: Interactive 2D Radar & Canvas Map -->
+    <section class="hud-panel center-panel">
+      <div class="radar-card">
+        <div class="radar-toolbar">
+          <div class="radar-status">
+            <span class="radar-mode-tag" id="radar-mode-display">MODE: PATROL MISSION</span>
+            <span class="radar-target-tag" id="radar-target-display">TARGET: Alpha Checkpoint</span>
+          </div>
+          <div class="radar-legend">
+            <span class="leg-item"><span class="leg-dot leg-green"></span> Ground Truth</span>
+            <span class="leg-item"><span class="leg-dot leg-cyan"></span> EKF Fused (2σ Ellipse)</span>
+            <span class="leg-item"><span class="leg-dot leg-red"></span> Raw Odometry Drift</span>
+            <span class="leg-item"><span class="leg-dot leg-yellow"></span> 2D LiDAR Rays</span>
+            <span class="leg-item"><span class="leg-dot leg-purple"></span> A* Nav2 Path</span>
+          </div>
+        </div>
+
+        <div class="canvas-viewport" id="canvasViewport">
+          <canvas id="radarCanvas" width="900" height="900"></canvas>
+          
+          <!-- Overlay Controls -->
+          <div class="canvas-floating-tip">
+            <span>🖱️ <b>Click anywhere on radar</b> to dispatch immediate tactical waypoint</span>
+          </div>
+
+          <!-- Zoom & Center reset -->
+          <div class="canvas-controls">
+            <button class="btn-canvas" id="btnRecenter" title="Recenter View">🎯 Center</button>
+            <button class="btn-canvas" id="btnToggleRays" title="Toggle LiDAR Rays">📡 LiDAR</button>
+            <button class="btn-canvas" id="btnToggleTrails" title="Toggle Trails">〰️ Trails</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- RIGHT PANEL: Mission Dispatch, Teleop & Adversary Injections -->
+    <section class="hud-panel right-panel">
+      
+      <!-- Mission Executive Controller -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-icon">🚀</span>
+          <h3>MISSION EXECUTIVE</h3>
+          <span class="tag tag-purple">NAV2 ACTION</span>
+        </div>
+        <div class="card-body">
+          <div class="btn-row">
+            <button class="btn btn-primary" id="btnPatrol">
+              <span>▶</span> AUTONOMOUS PATROL
+            </button>
+            <button class="btn btn-warning" id="btnPause">
+              <span id="pause-icon">⏸</span> <span id="pause-text">PAUSE</span>
+            </button>
+            <button class="btn btn-danger" id="btnReset">
+              <span>↺</span> RESET RUN
+            </button>
+          </div>
+
+          <!-- Waypoints Checklist -->
+          <div class="waypoints-list-container">
+            <div class="wp-header">RECONNAISSANCE PATROL ROUTE</div>
+            <div class="wp-list" id="waypointsList">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+
+          <div class="export-box">
+            <button class="btn btn-secondary btn-block" id="btnExportCsv">
+              <span>💾</span> EXPORT TRAJECTORY BENCHMARK CSV
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Teleoperation & Manual Override -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-icon">🎮</span>
+          <h3>MANUAL TELEOPERATION</h3>
+          <span class="tag tag-cyan">/cmd_vel</span>
+        </div>
+        <div class="card-body">
+          <div class="teleop-container">
+            <div class="dpad-grid">
+              <div></div>
+              <button class="dpad-btn" id="dpad-up">▲</button>
+              <div></div>
+              <button class="dpad-btn" id="dpad-left">◄</button>
+              <button class="dpad-btn dpad-stop" id="dpad-stop">STOP</button>
+              <button class="dpad-btn" id="dpad-right">►</button>
+              <div></div>
+              <button class="dpad-btn" id="dpad-down">▼</button>
+              <div></div>
+            </div>
+            <div class="keyboard-hint">
+              <span>⌨️ Keys: <b>WASD</b> or <b>Arrow Keys</b> | <b>SPACEBAR</b> to Stop</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sensor Fault & Adversary Injection -->
+      <div class="card fault-card">
+        <div class="card-header">
+          <span class="card-icon">⚡</span>
+          <h3>ADVERSARY & FAULT INJECTION</h3>
+          <span class="tag tag-red">STRESS TEST</span>
+        </div>
+        <div class="card-body">
+          <div class="fault-item">
+            <div class="fault-info">
+              <span class="fault-title">WHEEL SLIPPAGE (35% FRICTION LOSS)</span>
+              <span class="fault-desc">Causes dead-reckoning to veer wildly; EKF relies on IMU gyro</span>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="toggleSlip">
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <div class="fault-item">
+            <div class="fault-info">
+              <span class="fault-title">VSLAM OPTICAL BLACKOUT (IR JAMMING)</span>
+              <span class="fault-desc">Drops camera features; covariance ellipse expands</span>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="toggleBlackout">
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <div class="fault-item">
+            <div class="fault-info">
+              <span class="fault-title">IMU GYROSCOPE BIAS DRIFT (+0.08 rad/s)</span>
+              <span class="fault-desc">Simulates temperature-induced random walk bias</span>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="toggleImuBias">
+              <span class="slider"></span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

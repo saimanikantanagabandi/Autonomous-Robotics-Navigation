@@ -125,6 +125,17 @@ Experimental evaluation across a 60-second reconnaissance sweep in a GPS-denied 
 ## 📁 Repository Structure
 ```
 autonomous_vslam_ugv/
+├── mission_control/                         # Full-Stack Mission Control Dashboard & Teleop
+│   ├── server.py                            # FastAPI app, WebSocket telemetry & REST API
+│   ├── simulation_engine.py                 # Multi-threaded UGV physics, EKF, Nav2 & watchdog
+│   ├── bunker_map.py                        # 40x40m bunker model, 2D LiDAR raycaster & A* planner
+│   ├── static/                              # Cybernetic dark HUD frontend
+│   │   ├── index.html                       # 2D radar, telemetry tables, controls & charts
+│   │   ├── style.css                        # Aerospace tactical mission control styling
+│   │   └── app.js                           # 60 FPS canvas renderer, WebSocket client, teleop
+│   └── tests/
+│       └── test_mission_control.py          # Geometry, raycaster, EKF & engine unit tests
+├── run_mission_control.py                   # 1-Click Desktop/Web Mission Control launcher
 ├── results/                                 # Generated evaluation plots & benchmarks
 │   ├── ekf_trajectory_benchmark.png
 │   └── ate_rpe_evaluation.png
@@ -168,14 +179,27 @@ autonomous_vslam_ugv/
 
 ## 🚀 Quickstart & Execution
 
-### Option 1: Run Standalone Python EKF Simulation (Instant on Windows/Mac/Linux)
+### Option 0: Instant Zero-Dependency Website for Judges & Evaluators (Works Forever)
+Open [`index.html`](file:///c:/Users/91738/Downloads/Autonomous%20Robotics%20&%20Navigation%20%28Project%201%29/index.html) or run `open_website.bat`.
+- **Zero build tools, zero runtime dependencies, 100% self-contained**: Runs directly in any web browser without Python, Node, or ROS 2.
+- Features a live 60 FPS simulator, plain-English educational tour, benchmark charts, and 1-click test scenarios for evaluators.
+- Can be hosted directly on GitHub Pages with 0 setup.
+
+### Option 1: Full-Stack Mission Control Web Application (Interactive Desktop/Browser App)
+Launch the tactical mission control dashboard with real-time 60 FPS radar map, live EKF covariance ellipse, 360° LiDAR raycasting, teleoperation (WASD/Arrows), click-to-navigate goal dispatch, and sensor fault injection:
+```bash
+python run_mission_control.py
+```
+*Automatically opens `http://127.0.0.1:8000` in your web browser!*
+
+### Option 2: Standalone Python EKF Benchmark
 You can run the mathematical filter and generate benchmark plots immediately:
 ```bash
 python scripts/standalone_ekf_sim.py
 python scripts/trajectory_evaluator.py
 ```
 
-### Option 2: Full ROS 2 Humble + Gazebo Stack (Ubuntu 22.04 / WSL2)
+### Option 3: Full ROS 2 Humble + Gazebo Stack (Ubuntu 22.04 / WSL2)
 
 #### 1. Setup Environment:
 ```bash

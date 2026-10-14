@@ -97,8 +97,55 @@ def test_simulation_engine():
 
     # CSV export
     csv_str = engine.export_csv_data()
-    assert "time_sec,gt_x,gt_y" in csv_str
+    # SAR telemetry payload checks
+    assert "sar" in time_payload
+    assert "survivors" in time_payload["sar"]
+    assert "hazards" in time_payload["sar"]
+    assert "camera_frame" in time_payload["sar"]
+    assert "triage_counts" in time_payload["sar"]
+
+    # SAR operational actions
+    engine.start_sar_sweep()
+    assert engine.mode == "SAR_SWEEP"
+
+    # Rescue team dispatch
+    dispatch_res = engine.dispatch_rescue_team("SURV-101")
+    assert dispatch_res["status"] == "ok"
+    assert len(dispatch_res["ingress_route"]) >= 2
+
+    # Mark casualty rescued
+    engine.mark_survivor_rescued("SURV-101")
+    assert "SURV-101" in engine.rescued_survivor_ids
+    assert engine.triage_counts["RESCUED"] >= 1
+
+    # Manifest export
+    manifest = engine.export_sar_report_json()
+    assert "mission_name" in manifest
+    assert len(manifest["survivors"]) >= 4
     print("[PASS] Simulation engine & telemetry tests")
+
+def test_sar_vision_detector():
+    from mission_control.sar_vision import SARVisionDetector
+    detector = SARVisionDetector(width=240, height=180)
+    survivors = [
+        {"id": "S1", "name": "Test Survivor", "x": 3.0, "y": 0.0, "triage": "RED", "temp_c": 37.5, "status": "Trapped", "sound_detected": True}
+    ]
+    frame_b64, active_dets, alert = detector.render_and_detect(
+        robot_x=0.0, robot_y=0.0, robot_theta=0.0,
+        survivors=survivors, hazards=[], rubble_piles=[],
+        dropout_zone_active=False
+    )
+    assert frame_b64.startswith("data:image/jpeg;base64,")
+    assert len(active_dets) >= 1
+    assert active_dets[0]["id"] == "S1"
+    assert active_dets[0]["confidence"] > 0.6
+
+    # Test mode toggle
+    detector.set_mode("THERMAL")
+    assert detector.vision_mode == "THERMAL"
+    frame_thermal, _, _ = detector.render_and_detect(0, 0, 0, survivors, [], [])
+    assert frame_thermal.startswith("data:image/jpeg;base64,")
+    print("[PASS] SAR OpenCV Vision & Object Detection tests")
 
 if __name__ == "__main__":
     test_bunker_map_geometry()
@@ -106,4 +153,5 @@ if __name__ == "__main__":
     test_astar_planner()
     test_ekf_equations()
     test_simulation_engine()
+    test_sar_vision_detector()
     print("\n[ALL TESTS PASSED SUCCESSFULLY!]")

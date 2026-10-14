@@ -26,6 +26,9 @@ setup(
             'patrol_mission_node = autonomous_ugv_mission.patrol_mission_node:main',
             'gps_denied_monitor = autonomous_ugv_mission.gps_denied_monitor:main',
             'trajectory_logger = autonomous_ugv_mission.trajectory_logger:main',
+            'survivor_detector_node = autonomous_ugv_mission.survivor_detector_node:main',
+            'sar_mission_executive = autonomous_ugv_mission.sar_mission_executive:main',
+            'thermal_hazard_node = autonomous_ugv_mission.thermal_hazard_node:main',
         ],
     },
 )

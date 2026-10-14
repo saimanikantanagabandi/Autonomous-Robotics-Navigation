@@ -15,8 +15,9 @@ import math
 import time
 import threading
 import numpy as np
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional, Set
 from mission_control.bunker_map import BunkerMap
+from mission_control.sar_vision import SARVisionDetector
 
 def normalize_angle(angle: float) -> float:
     while angle > math.pi:
@@ -73,16 +74,33 @@ class ExtendedKalmanFilter2D:
         self.x[2] = normalize_angle(self.x[2])
         self.P = (np.eye(5) - K @ H) @ self.P
 
-    def update_vo(self, z_vo):
-        H = np.zeros((2, 5))
-        H[0, 0] = 1.0
-        H[1, 1] = 1.0
-        y = z_vo - H @ self.x
-        S = H @ self.P @ H.T + self.R_vo
-        K = self.P @ H.T @ np.linalg.inv(S)
-        self.x = self.x + K @ y
-        self.x[2] = normalize_angle(self.x[2])
-        self.P = (np.eye(5) - K @ H) @ self.P
+    def update_vo(self, z_vo, z_theta: Optional[float] = None):
+        if z_theta is not None:
+            H = np.zeros((3, 5))
+            H[0, 0] = 1.0
+            H[1, 1] = 1.0
+            H[2, 2] = 1.0
+            y = np.array([
+                z_vo[0] - self.x[0],
+                z_vo[1] - self.x[1],
+                normalize_angle(z_theta - self.x[2])
+            ])
+            R = np.diag([self.R_vo[0, 0], self.R_vo[1, 1], 0.035**2])
+            S = H @ self.P @ H.T + R
+            K = self.P @ H.T @ np.linalg.inv(S)
+            self.x = self.x + K @ y
+            self.x[2] = normalize_angle(self.x[2])
+            self.P = (np.eye(5) - K @ H) @ self.P
+        else:
+            H = np.zeros((2, 5))
+            H[0, 0] = 1.0
+            H[1, 1] = 1.0
+            y = z_vo - H @ self.x
+            S = H @ self.P @ H.T + self.R_vo
+            K = self.P @ H.T @ np.linalg.inv(S)
+            self.x = self.x + K @ y
+            self.x[2] = normalize_angle(self.x[2])
+            self.P = (np.eye(5) - K @ H) @ self.P
 
     def get_covariance_ellipse(self) -> Dict[str, float]:
         """Calculates 2-sigma position covariance uncertainty ellipse."""
@@ -111,14 +129,14 @@ class SimulationEngine:
 
         # Ground Truth state: [x, y, theta, v, omega]
         self.gt_x = 0.0
-        self.gt_y = 0.0
+        self.gt_y = -3.0
         self.gt_theta = 0.0
         self.gt_v = 0.0
         self.gt_omega = 0.0
 
         # Raw Odometry state (dead-reckoning with uncorrected drift)
         self.odom_x = 0.0
-        self.odom_y = 0.0
+        self.odom_y = -3.0
         self.odom_theta = 0.0
         self.odom_v = 0.0
         self.odom_omega = 0.0
@@ -163,6 +181,17 @@ class SimulationEngine:
         # Sensor Telemetry Cache
         self.latest_lidar_scan = []
         self.last_imu_gyro = 0.0
+
+        # AI-Powered Search & Rescue Vision & Survivor Tracking
+        self.vision = SARVisionDetector(width=360, height=240, fov_deg=72.0)
+        self.survivors = [dict(s) for s in self.bunker.get_survivors()]
+        self.hazards = [dict(h) for h in self.bunker.get_hazards()]
+        self.active_detections: List[Dict[str, Any]] = []
+        self.sar_alerts: List[Dict[str, Any]] = []
+        self.rescued_survivor_ids: Set[str] = set()
+        self.latest_camera_frame: str = ""
+        self.triage_counts: Dict[str, int] = {"RED": 0, "YELLOW": 0, "GREEN": 0, "RESCUED": 0, "TOTAL": len(self.survivors)}
+        self._last_hazard_warn_time: float = 0.0
 
         # Background Simulation Thread
         self.running = True
@@ -224,18 +253,18 @@ class SimulationEngine:
     def reset_simulation(self):
         with self.lock:
             self.gt_x = 0.0
-            self.gt_y = 0.0
+            self.gt_y = -3.0
             self.gt_theta = 0.0
             self.gt_v = 0.0
             self.gt_omega = 0.0
 
             self.odom_x = 0.0
-            self.odom_y = 0.0
+            self.odom_y = -3.0
             self.odom_theta = 0.0
             self.odom_v = 0.0
             self.odom_omega = 0.0
 
-            self.ekf = ExtendedKalmanFilter2D(0.0, 0.0, 0.0)
+            self.ekf = ExtendedKalmanFilter2D(0.0, -3.0, 0.0)
             self.gt_trail.clear()
             self.odom_trail.clear()
             self.ekf_trail.clear()
@@ -243,6 +272,11 @@ class SimulationEngine:
             self.ate_odom_history.clear()
             self.ate_ekf_history.clear()
             self.watchdog_alerts.clear()
+            self.sar_alerts.clear()
+            self.active_detections.clear()
+            self.rescued_survivor_ids.clear()
+            self.survivors = [dict(s) for s in self.bunker.get_survivors()]
+            self._update_triage_counts()
             self.mission_start_time = time.time()
             self.mode = "PATROL"
             self._set_patrol_goal(0)
@@ -270,7 +304,7 @@ class SimulationEngine:
 
             with self.lock:
                 # 1. Trajectory tracking & Controller
-                if self.mode in ("PATROL", "WAYPOINT") and self.planned_path:
+                if self.mode in ("PATROL", "SAR_SWEEP", "WAYPOINT") and self.planned_path:
                     # Find lookahead waypoint
                     curr_x, curr_y = self.ekf.x[0], self.ekf.x[1]
                     target_pt = self.planned_path[0]
@@ -283,8 +317,9 @@ class SimulationEngine:
 
                     if len(self.planned_path) <= 1 and dist_to_pt < 0.6:
                         # Reached target
-                        if self.mode == "PATROL":
-                            self._add_alert("PATROL", f"Checkpoint cleared: {self.current_goal['name']}", "SUCCESS")
+                        if self.mode in ("PATROL", "SAR_SWEEP"):
+                            label = "SAR Sweep Sector Cleared" if self.mode == "SAR_SWEEP" else "Checkpoint Cleared"
+                            self._add_alert(self.mode, f"{label}: {self.current_goal['name']}", "SUCCESS")
                             self._set_patrol_goal(self.current_wp_idx + 1)
                         else:
                             self._add_alert("NAV", "Custom destination reached. Holding position.", "SUCCESS")
@@ -368,7 +403,8 @@ class SimulationEngine:
 
                 # VSLAM update (if features available)
                 if is_vo_available:
-                    self.ekf.update_vo(np.array([meas_vo_x, meas_vo_y]))
+                    meas_vo_th = self.gt_theta + np.random.normal(0, 0.015)
+                    self.ekf.update_vo(np.array([meas_vo_x, meas_vo_y]), meas_vo_th)
                     self.last_vo_time = time.time()
 
                 # 5. Supervisor Watchdog Integrity Monitor
@@ -433,6 +469,43 @@ class SimulationEngine:
                     })
                     if len(self.log_records) > 2000:
                         self.log_records.pop(0)
+
+                # 9. AI Computer Vision & Survivor Detection (every 2 ticks = 100ms / 10 FPS)
+                if (trail_tick % 2) == 0:
+                    try:
+                        frame_b64, active_dets, new_alert = self.vision.render_and_detect(
+                            self.gt_x, self.gt_y, self.gt_theta,
+                            self.survivors, self.hazards, self.bunker.rubble_piles,
+                            in_dropout_zone
+                        )
+                        self.latest_camera_frame = frame_b64
+                        self.active_detections = active_dets
+
+                        if new_alert:
+                            surv_id = new_alert["id"]
+                            for s in self.survivors:
+                                if s["id"] == surv_id:
+                                    s["discovered"] = True
+                                    s["confidence"] = new_alert["confidence"]
+                                    s["discovery_time"] = time.strftime("%H:%M:%S")
+                                    s["est_x"] = new_alert["world_x"]
+                                    s["est_y"] = new_alert["world_y"]
+                                    break
+                            # Queue SAR Alert
+                            self.sar_alerts.insert(0, new_alert)
+                            if len(self.sar_alerts) > 30:
+                                self.sar_alerts.pop()
+                            self._add_alert("SAR_ALERT", f"SURVIVOR DETECTED: {new_alert['name']} at ({new_alert['world_x']}, {new_alert['world_y']}) - TRIAGE {new_alert['triage']}!", "WARNING")
+                            self._update_triage_counts()
+                    except Exception as e:
+                        pass
+
+                # 10. Hazard Proximity Alarm
+                prox = self.bunker.get_hazard_proximity(self.gt_x, self.gt_y)
+                if prox and prox["dist"] < 3.2:
+                    if (now - self._last_hazard_warn_time) > 8.0:
+                        self._last_hazard_warn_time = now
+                        self._add_alert("HAZARD", f"PROXIMITY WARNING: {prox['hazard']} ({prox['temp_c']}°C) at {prox['dist']}m!", "WARN")
 
     def get_state_payload(self) -> Dict[str, Any]:
         """Telemetry payload sent via WebSocket / HTTP to UI."""
@@ -511,7 +584,109 @@ class SimulationEngine:
                     "recent_ate_ekf": [round(x, 2) for x in self.ate_ekf_history[-30:]]
                 },
                 # Watchdog logs
-                "alerts": self.watchdog_alerts[-10:]
+                "alerts": self.watchdog_alerts[-10:],
+                # Search & Rescue Payload
+                "sar": {
+                    "camera_frame": self.latest_camera_frame,
+                    "active_detections": self.active_detections,
+                    "survivors": self.survivors,
+                    "hazards": self.hazards,
+                    "sar_alerts": self.sar_alerts[:15],
+                    "triage_counts": self.triage_counts,
+                    "vision_mode": self.vision.vision_mode,
+                    "rubble_piles": getattr(self.bunker, "rubble_piles", []),
+                    "hazard_proximity": self.bunker.get_hazard_proximity(self.gt_x, self.gt_y)
+                }
+            }
+
+    def _update_triage_counts(self):
+        red = sum(1 for s in self.survivors if s.get("discovered") and s["triage"] == "RED" and s["id"] not in self.rescued_survivor_ids)
+        yellow = sum(1 for s in self.survivors if s.get("discovered") and s["triage"] == "YELLOW" and s["id"] not in self.rescued_survivor_ids)
+        green = sum(1 for s in self.survivors if s.get("discovered") and s["triage"] == "GREEN" and s["id"] not in self.rescued_survivor_ids)
+        rescued = len(self.rescued_survivor_ids)
+        self.triage_counts = {
+            "RED": red,
+            "YELLOW": yellow,
+            "GREEN": green,
+            "RESCUED": rescued,
+            "TOTAL": len(self.survivors)
+        }
+
+    def start_sar_sweep(self):
+        """Initiates systematic autonomous search & rescue sweep pattern."""
+        with self.lock:
+            self.mode = "SAR_SWEEP"
+            self._set_patrol_goal(0)
+            self._add_alert("SAR_COMMAND", "Autonomous Search & Rescue sector sweep initiated.", "INFO")
+
+    def dispatch_rescue_team(self, surv_id: str) -> Dict[str, Any]:
+        """Dispatches human USAR rescue team to survivor coordinates with ingress route."""
+        with self.lock:
+            target = next((s for s in self.survivors if s["id"] == surv_id), None)
+            if not target:
+                return {"status": "error", "message": f"Survivor {surv_id} not found"}
+
+            ingress_path = self.bunker.plan_path_astar((0.0, 0.0), (target["x"], target["y"]))
+            self._add_alert("DISPATCH", f"USAR Team Dispatched to {target['name']} at ({target['x']}, {target['y']})", "SUCCESS")
+            return {
+                "status": "ok",
+                "survivor": target,
+                "ingress_route": ingress_path,
+                "triage": target["triage"],
+                "hazards_nearby": self.bunker.get_hazard_proximity(target["x"], target["y"])
+            }
+
+    def mark_survivor_rescued(self, surv_id: str):
+        """Marks survivor as successfully extracted to medical staging."""
+        with self.lock:
+            self.rescued_survivor_ids.add(surv_id)
+            for s in self.survivors:
+                if s["id"] == surv_id:
+                    s["rescued"] = True
+                    break
+            self._update_triage_counts()
+            self._add_alert("SAR_RESCUE", f"Casualty {surv_id} successfully evacuated to Base Medical Staging!", "SUCCESS")
+
+    def return_to_base(self):
+        """Commands robot back to Base Station (0, 0) / Extraction Point."""
+        self.set_custom_goal(0.0, 0.0)
+        self._add_alert("NAV", "RTB Command: Returning to Base Station triage post.", "INFO")
+
+    def set_vision_mode(self, mode: str):
+        """Switches camera mode: RGB, THERMAL, AI_HUD, NIGHT."""
+        self.vision.set_mode(mode)
+        self._add_alert("VISION", f"Camera vision mode toggled to: {mode}", "INFO")
+
+    def trigger_disaster_event(self, event_type: str):
+        """Simulates real-world disaster dynamics (aftershocks, fire flare, smoke)."""
+        with self.lock:
+            if event_type == "aftershock":
+                self.gt_theta = normalize_angle(self.gt_theta + (float(np.random.rand()) - 0.5) * 1.2)
+                self.fault_wheel_slip = True
+                self._add_alert("DISASTER", "SEISMIC AFTERSHOCK: Structural tremor! Wheel traction disrupted.", "WARN")
+            elif event_type == "fire_flare":
+                self._add_alert("DISASTER", "SECONDARY HAZARD: Gas line thermal flare ignited in Sector 5!", "WARN")
+            elif event_type == "smoke_blackout":
+                self.fault_vslam_blackout = True
+                self._add_alert("DISASTER", "SMOKE PLUME: Dense zero-visibility soot cloud! VSLAM tracking lost.", "WARN")
+
+    def export_sar_report_json(self) -> Dict[str, Any]:
+        """Generates comprehensive SAR Incident & Casualty Manifest Report."""
+        with self.lock:
+            return {
+                "mission_name": "AEGIS-SAR Autonomous Search & Rescue Operation",
+                "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
+                "mission_duration_sec": round(time.time() - self.mission_start_time, 1),
+                "robot_status": {
+                    "mode": self.mode,
+                    "ekf_x": round(float(self.ekf.x[0]), 2),
+                    "ekf_y": round(float(self.ekf.x[1]), 2),
+                    "ekf_heading_deg": round(math.degrees(float(self.ekf.x[2])), 1)
+                },
+                "triage_summary": self.triage_counts,
+                "survivors": self.survivors,
+                "alerts_dispatched": self.sar_alerts,
+                "hazards_identified": self.hazards
             }
 
     def export_csv_data(self) -> str:

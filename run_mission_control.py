@@ -17,7 +17,8 @@ def check_dependencies():
         "uvicorn": "uvicorn",
         "websockets": "websockets",
         "numpy": "numpy",
-        "scipy": "scipy"
+        "scipy": "scipy",
+        "cv2": "opencv-python-headless"
     }
     missing = []
     for mod, pkg in required.items():
@@ -36,7 +37,7 @@ def check_dependencies():
 def open_browser():
     time.sleep(1.2)
     url = "http://127.0.0.1:8000"
-    print(f"\n[+] Opening Mission Control Tactical Dashboard: {url}")
+    print(f"\n[+] Opening AEGIS-SAR Mission Control Tactical Dashboard: {url}")
     try:
         webbrowser.open(url)
     except Exception as e:
@@ -47,24 +48,28 @@ def main():
 
     banner = r"""
 ================================================================================
-   ______  __  ________________  _   ______  __  _______  __  _______   _   __
-  / ____/ / / / /_  __/ __ \/ __ \/ | / / __ \/  |/  / __ \/ / / / ___/  | | / /
- / /_    / / / / / / / / / / / / /  |/ / / / / /|_/ / / / / / / /\__ \   | |/ / 
-/ __/   / /_/ / / / / /_/ / /_/ / /|  / /_/ / /  / / /_/ / /_/ /___/ /   | |/  
-/_/     \____/ /_/  \____/\____/_/ |_/\____/_/  /_/\____/\____//____/    |___/   
-          Autonomous UGV GPS-Denied Mission Control & Teleoperation             
+    ___    __________________      _____ ___    ____ 
+   /   |  / ____/ ____/  _/ ___/     / ___//   |  / __ \
+  / /| | / __/ / / __ / / \__ \ ____ \__ \/ /| | / /_/ /
+ / ___ |/ /___/ /_/ // / ___/ /_____/__/ / ___ |/ _, _/ 
+/_/  |_/_____/\____/___//____/     /____/_/  |_/_/ |_|  
+     AI-POWERED SEARCH & RESCUE ROBOT // TACTICAL DISASTER RESPONSE
 ================================================================================
- [STATUS] Host: http://127.0.0.1:8000
- [STATUS] Sensors: 50Hz Wheel Odom, 100Hz 9-DoF IMU, 15Hz RGB-D VSLAM, 2D LiDAR
- [STATUS] Filter : 15-State Extended Kalman Filter (robot_localization)
- [STATUS] Nav2   : A* Global Path Planning & Pure Pursuit Trajectory Tracking
+ [MISSION] Objective: Post-Disaster Survivor Detection & Extraction Triage
+ [VISION]  AI Perception: OpenCV Human & Thermal Hotspot Detection (10 FPS)
+ [NAV]     Autonomous Nav2 Sector Sweep, Rubble Avoidance, Hazard Monitoring
+ [FUSION]  15-State EKF Sensor Fusion (Wheel Odometry + 9-DoF IMU + VSLAM)
+ [ALERTS]  Real-Time Location Alerts & Safe Ingress Routing for USAR Teams
 --------------------------------------------------------------------------------
- Hotkeys & Controls:
-   - Click anywhere on the 2D Radar to dispatch immediate tactical waypoints!
-   - Drive manually with WASD or Arrow Keys | Spacebar to Emergency Stop
-   - Toggle Wheel Slip, VSLAM Blackout, or IMU Bias to stress-test the EKF!
-   - Export benchmark trajectory data to CSV with 1-click
+ Controls & Tactical Features:
+   - Live AI Camera: Toggle AI HUD, Optical RGB, Thermal IR, Night/Smoke
+   - Survivor Triage: Red (Critical), Yellow (Delayed), Green (Minor)
+   - 1-Click USAR Team Dispatch with automated safe extraction routes
+   - Interactive 2D Radar: Click anywhere to command navigation waypoints
+   - Disaster Stress Testing: Seismic Aftershocks, Gas Fires, Smoke Plumes
+   - Export Casualty Manifest (JSON) and Trajectory Benchmark (CSV)
 --------------------------------------------------------------------------------
+ Host URL: http://127.0.0.1:8000
  Press Ctrl+C in this terminal to shut down the Mission Control server.
 ================================================================================
 """

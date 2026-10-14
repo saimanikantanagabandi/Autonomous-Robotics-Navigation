@@ -3,27 +3,45 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Autonomous UGV // GPS-Denied Mission Control</title>
+  <title>AEGIS-SAR // AI Search & Rescue Robot Mission Control</title>
   <link rel="stylesheet" href="/static/style.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700;800&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
 </head>
 <body>
+  <!-- Emergency Survivor Alert Banner (Pop-down Notification) -->
+  <div class="emergency-alert-banner" id="emergencyBanner" style="display: none;">
+    <div class="alert-content">
+      <span class="alert-siren">🚨</span>
+      <div class="alert-text-block">
+        <div class="alert-headline" id="bannerHeadline">CRITICAL SURVIVOR LOCATED: SURV-101</div>
+        <div class="alert-sub" id="bannerSub">Coordinates: (X: 6.50m, Y: 3.50m) | TRIAGE RED IMMEDIATE | Vitals: Respiration Confirmed</div>
+      </div>
+      <div class="alert-actions">
+        <button class="btn btn-alert-dispatch" id="btnBannerDispatch">DISPATCH RESCUE TEAM</button>
+        <button class="btn btn-alert-dismiss" id="btnBannerDismiss">ACKNOWLEDGE</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Top Navigation / Tactical HUD Header -->
   <header class="hud-header">
     <div class="hud-brand">
       <div class="radar-pulse-icon"></div>
       <div>
-        <h1 class="brand-title">AUTONOMOUS UGV MISSION CONTROL</h1>
-        <div class="brand-sub">GPS-DENIED TACTICAL NAVIGATION STACK &bull; ROS 2 // RTAB-MAP // EKF FUSION</div>
+        <h1 class="brand-title">AEGIS-SAR // AI SEARCH & RESCUE ROBOT</h1>
+        <div class="brand-sub">TACTICAL DISASTER RESPONSE &bull; OPENCV AI OBJECT DETECTION &bull; ROS 2 &bull; NAV2 &bull; EKF SLAM</div>
       </div>
     </div>
 
     <!-- Status Badges -->
     <div class="status-badge-container">
+      <div class="badge badge-triage" id="badge-triage">
+        <span class="badge-dot pulse-red"></span> TRIAGE: <span id="triage-status-txt">4 SURVIVORS</span>
+      </div>
       <div class="badge badge-danger blink" id="badge-gps">
-        <span class="badge-dot"></span> GPS: DENIED / JAMMED
+        <span class="badge-dot"></span> GPS: DENIED / DISASTER ZONE
       </div>
       <div class="badge badge-success" id="badge-vslam">
         <span class="badge-dot"></span> VSLAM: 15 Hz TRACKING
@@ -34,6 +52,9 @@
       <div class="badge badge-ws" id="badge-ws">
         <span class="badge-dot"></span> LINK: ONLINE
       </div>
+      <button class="audio-toggle-btn" id="btnToggleAudio" title="Toggle Audio Alarms">
+        <span id="audio-icon">🔊</span> AUDIO: ON
+      </button>
       <div class="mission-timer" id="mission-clock">T+ 00:00</div>
     </div>
   </header>
@@ -41,13 +62,54 @@
   <!-- Main HUD Layout Grid -->
   <main class="hud-grid">
     
-    <!-- LEFT PANEL: State Estimation, Benchmarks & Watchdog -->
+    <!-- LEFT PANEL: AI Camera Stream, State Estimation & Benchmarks -->
     <section class="hud-panel left-panel">
+
+      <!-- AI Computer Vision & OpenCV Stream Card -->
+      <div class="card camera-card">
+        <div class="card-header">
+          <span class="card-icon">👁️</span>
+          <h3>AI COMPUTER VISION // OPENCV DETECTOR</h3>
+          <span class="tag tag-cyan" id="vision-mode-tag">AI HUD</span>
+        </div>
+        <div class="card-body camera-body">
+          <div class="camera-viewport-box">
+            <img id="cameraStreamImg" class="camera-stream" alt="Robot Perspective View Stream" src="">
+            <div class="camera-overlay-stats">
+              <span class="stat-pill" id="hud-res-fps">360x240 @ 10 FPS</span>
+              <span class="stat-pill highlight-cyan" id="hud-det-count">0 DETECTIONS</span>
+            </div>
+          </div>
+
+          <!-- Vision Mode Selector -->
+          <div class="vision-mode-bar">
+            <button class="btn-vision-mode active" data-mode="AI_HUD">AI HUD</button>
+            <button class="btn-vision-mode" data-mode="RGB">RGB</button>
+            <button class="btn-vision-mode" data-mode="THERMAL">THERMAL IR</button>
+            <button class="btn-vision-mode" data-mode="NIGHT">NIGHT/SMOKE</button>
+          </div>
+
+          <!-- Active Object Detection Card -->
+          <div class="detection-telemetry-box" id="activeDetectionBox">
+            <div class="det-row">
+              <span class="det-label">PRIMARY TARGET:</span>
+              <span class="det-val highlight-green" id="det-target-name">SCANNING SECTOR...</span>
+            </div>
+            <div class="det-grid-mini">
+              <div><span class="lbl-dim">CONFIDENCE:</span> <span id="det-conf" class="highlight-cyan">--%</span></div>
+              <div><span class="lbl-dim">EST RANGE:</span> <span id="det-range" class="highlight-yellow">-- m</span></div>
+              <div><span class="lbl-dim">BODY TEMP:</span> <span id="det-temp" class="highlight-orange">-- °C</span></div>
+              <div><span class="lbl-dim">TRIAGE:</span> <span id="det-triage" class="highlight-red">--</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- State Estimation Card -->
       <div class="card">
         <div class="card-header">
           <span class="card-icon">🎯</span>
-          <h3>STATE ESTIMATION</h3>
+          <h3>ROBOT STATE ESTIMATION</h3>
           <span class="tag tag-cyan">ROBOT_LOCALIZATION</span>
         </div>
         <div class="card-body">
@@ -90,7 +152,6 @@
             </div>
           </div>
 
-          <!-- Covariance 2-Sigma metrics -->
           <div class="covariance-metric-box">
             <div class="metric-mini">
               <span class="lbl">COVARIANCE 2σ RADIUS</span>
@@ -108,7 +169,7 @@
       <div class="card">
         <div class="card-header">
           <span class="card-icon">📊</span>
-          <h3>BENCHMARK DRIFT QUANTIFICATION</h3>
+          <h3>DRIFT QUANTIFICATION</h3>
           <span class="tag tag-green">ATE / RPE</span>
         </div>
         <div class="card-body">
@@ -132,7 +193,6 @@
             </div>
           </div>
 
-          <!-- Mini Live Error Sparkline -->
           <div class="sparkline-container">
             <div class="sparkline-header">
               <span>REAL-TIME POSITION DRIFT OVER TIME (m)</span>
@@ -141,7 +201,7 @@
                 <span class="leg-dot leg-cyan"></span> EKF Fused
               </span>
             </div>
-            <canvas id="errorChartCanvas" width="380" height="90"></canvas>
+            <canvas id="errorChartCanvas" width="380" height="75"></canvas>
           </div>
         </div>
       </div>
@@ -150,42 +210,41 @@
       <div class="card watchdog-card">
         <div class="card-header">
           <span class="card-icon">🛡️</span>
-          <h3>INTEGRITY MONITOR & WATCHDOG</h3>
+          <h3>INTEGRITY & INCIDENT LOG</h3>
           <span class="tag tag-amber" id="watchdog-status-tag">ACTIVE</span>
         </div>
         <div class="card-body terminal-body" id="watchdogTerminal">
-          <div class="log-line log-info"><span class="log-t">[SYS]</span> Watchdog integrity monitor initialized.</div>
-          <div class="log-line log-info"><span class="log-t">[SYS]</span> GPS satellite lock denied. Switching to EKF + VSLAM.</div>
+          <div class="log-line log-info"><span class="log-t">[SYS]</span> AEGIS-SAR Mission Supervisor online.</div>
+          <div class="log-line log-info"><span class="log-t">[SYS]</span> OpenCV Multi-spectral vision pipeline initialized.</div>
         </div>
       </div>
     </section>
 
-    <!-- CENTER PANEL: Interactive 2D Radar & Canvas Map -->
+    <!-- CENTER PANEL: Interactive 2D Disaster Radar Map -->
     <section class="hud-panel center-panel">
       <div class="radar-card">
         <div class="radar-toolbar">
           <div class="radar-status">
-            <span class="radar-mode-tag" id="radar-mode-display">MODE: PATROL MISSION</span>
-            <span class="radar-target-tag" id="radar-target-display">TARGET: Alpha Checkpoint</span>
+            <span class="radar-mode-tag" id="radar-mode-display">MODE: SAR SWEEP</span>
+            <span class="radar-target-tag" id="radar-target-display">TARGET: Sector 1</span>
           </div>
           <div class="radar-legend">
-            <span class="leg-item"><span class="leg-dot leg-green"></span> Ground Truth</span>
-            <span class="leg-item"><span class="leg-dot leg-cyan"></span> EKF Fused (2σ Ellipse)</span>
-            <span class="leg-item"><span class="leg-dot leg-red"></span> Raw Odometry Drift</span>
-            <span class="leg-item"><span class="leg-dot leg-yellow"></span> 2D LiDAR Rays</span>
-            <span class="leg-item"><span class="leg-dot leg-purple"></span> A* Nav2 Path</span>
+            <span class="leg-item"><span class="leg-dot leg-green"></span> Robot Chassis</span>
+            <span class="leg-item"><span class="leg-dot leg-cyan"></span> EKF Covariance</span>
+            <span class="leg-item"><span class="leg-dot leg-red"></span> Survivor (Red)</span>
+            <span class="leg-item"><span class="leg-dot leg-yellow"></span> Survivor (Ylw)</span>
+            <span class="leg-item"><span class="leg-dot leg-fire"></span> Fire / Hazard</span>
+            <span class="leg-item"><span class="leg-dot leg-purple"></span> Ingress Route</span>
           </div>
         </div>
 
         <div class="canvas-viewport" id="canvasViewport">
           <canvas id="radarCanvas" width="900" height="900"></canvas>
           
-          <!-- Overlay Controls -->
           <div class="canvas-floating-tip">
-            <span>🖱️ <b>Click anywhere on radar</b> to dispatch immediate tactical waypoint</span>
+            <span>🖱️ <b>Click anywhere on radar</b> to dispatch robot or inspect sector</span>
           </div>
 
-          <!-- Zoom & Center reset -->
           <div class="canvas-controls">
             <button class="btn-canvas" id="btnRecenter" title="Recenter View">🎯 Center</button>
             <button class="btn-canvas" id="btnToggleRays" title="Toggle LiDAR Rays">📡 LiDAR</button>
@@ -195,20 +254,42 @@
       </div>
     </section>
 
-    <!-- RIGHT PANEL: Mission Dispatch, Teleop & Adversary Injections -->
+    <!-- RIGHT PANEL: Survivor Triage Queue, Mission Dispatch & Adversary -->
     <section class="hud-panel right-panel">
       
-      <!-- Mission Executive Controller -->
+      <!-- Survivor Triage & Incident Manifest Card -->
+      <div class="card triage-card">
+        <div class="card-header">
+          <span class="card-icon">🚑</span>
+          <h3>SURVIVOR TRIAGE MANIFEST</h3>
+          <span class="tag tag-red" id="triage-summary-tag">2 CRITICAL</span>
+        </div>
+        <div class="card-body">
+          <div class="triage-stats-bar">
+            <div class="triage-stat-item red-stat"><span class="t-count" id="count-red">2</span> IMMEDIATE</div>
+            <div class="triage-stat-item yellow-stat"><span class="t-count" id="count-yellow">1</span> DELAYED</div>
+            <div class="triage-stat-item green-stat"><span class="t-count" id="count-green">1</span> MINOR</div>
+            <div class="triage-stat-item blue-stat"><span class="t-count" id="count-rescued">0</span> RESCUED</div>
+          </div>
+
+          <!-- Dynamic Survivor Cards Container -->
+          <div class="survivor-cards-container" id="survivorCardsContainer">
+            <!-- Populated dynamically by JavaScript -->
+          </div>
+        </div>
+      </div>
+
+      <!-- SAR Mission Executive Controller -->
       <div class="card">
         <div class="card-header">
           <span class="card-icon">🚀</span>
-          <h3>MISSION EXECUTIVE</h3>
-          <span class="tag tag-purple">NAV2 ACTION</span>
+          <h3>SAR MISSION EXECUTIVE</h3>
+          <span class="tag tag-purple">NAV2 / EKF</span>
         </div>
         <div class="card-body">
           <div class="btn-row">
-            <button class="btn btn-primary" id="btnPatrol">
-              <span>▶</span> AUTONOMOUS PATROL
+            <button class="btn btn-primary" id="btnSarSweep">
+              <span>▶</span> AUTONOMOUS SAR SWEEP
             </button>
             <button class="btn btn-warning" id="btnPause">
               <span id="pause-icon">⏸</span> <span id="pause-text">PAUSE</span>
@@ -218,17 +299,26 @@
             </button>
           </div>
 
+          <div class="btn-row" style="margin-top: 8px;">
+            <button class="btn btn-info btn-block" id="btnReturnToBase">
+              <span>🏠</span> RETURN TO BASE (RTB / EXTRACTION)
+            </button>
+          </div>
+
           <!-- Waypoints Checklist -->
           <div class="waypoints-list-container">
-            <div class="wp-header">RECONNAISSANCE PATROL ROUTE</div>
+            <div class="wp-header">DISASTER SECTORS TO SWEEP</div>
             <div class="wp-list" id="waypointsList">
               <!-- Dynamically populated -->
             </div>
           </div>
 
           <div class="export-box">
-            <button class="btn btn-secondary btn-block" id="btnExportCsv">
-              <span>💾</span> EXPORT TRAJECTORY BENCHMARK CSV
+            <button class="btn btn-secondary btn-block" id="btnExportManifest">
+              <span>📋</span> EXPORT CASUALTY MANIFEST (JSON)
+            </button>
+            <button class="btn btn-secondary btn-block" id="btnExportCsv" style="margin-top: 6px;">
+              <span>💾</span> EXPORT TRAJECTORY BENCHMARK (CSV)
             </button>
           </div>
         </div>
@@ -261,17 +351,24 @@
         </div>
       </div>
 
-      <!-- Sensor Fault & Adversary Injection -->
+      <!-- Disaster Dynamics & Adversary Injection -->
       <div class="card fault-card">
         <div class="card-header">
           <span class="card-icon">⚡</span>
-          <h3>ADVERSARY & FAULT INJECTION</h3>
+          <h3>DISASTER DYNAMICS & FAULT INJECTION</h3>
           <span class="tag tag-red">STRESS TEST</span>
         </div>
         <div class="card-body">
+          <!-- Quick Disaster Triggers -->
+          <div class="disaster-btn-group">
+            <button class="btn-disaster" id="btnEventAftershock">💥 SEISMIC AFTERSHOCK</button>
+            <button class="btn-disaster" id="btnEventFireFlare">🔥 GAS LINE FLARE</button>
+            <button class="btn-disaster" id="btnEventSmoke">☁️ SMOKE PLUME</button>
+          </div>
+
           <div class="fault-item">
             <div class="fault-info">
-              <span class="fault-title">WHEEL SLIPPAGE (35% FRICTION LOSS)</span>
+              <span class="fault-title">WHEEL SLIPPAGE (RUBBLE TRACTION LOSS)</span>
               <span class="fault-desc">Causes dead-reckoning to veer wildly; EKF relies on IMU gyro</span>
             </div>
             <label class="toggle-switch">
@@ -282,8 +379,8 @@
 
           <div class="fault-item">
             <div class="fault-info">
-              <span class="fault-title">VSLAM OPTICAL BLACKOUT (IR JAMMING)</span>
-              <span class="fault-desc">Drops camera features; covariance ellipse expands</span>
+              <span class="fault-title">VSLAM OPTICAL BLACKOUT (SMOKE / LOW LIGHT)</span>
+              <span class="fault-desc">Drops camera visual features; EKF covariance ellipse expands</span>
             </div>
             <label class="toggle-switch">
               <input type="checkbox" id="toggleBlackout">

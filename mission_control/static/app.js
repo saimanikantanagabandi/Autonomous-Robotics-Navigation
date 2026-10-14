@@ -1,14 +1,18 @@
 /**
- * Autonomous UGV Tactical Mission Control Client
- * ===============================================
+ * AEGIS-SAR Tactical Mission Control Client
+ * =========================================
  * Real-time 60 FPS Canvas rendering, WebSocket telemetry client,
- * interactive waypoint dispatch, teleoperation, and live sparkline charts.
+ * OpenCV AI vision stream, survivor triage manifest, and emergency alerting.
  */
 
 // --- Global State ---
 let ws = null;
 let telemetryData = null;
 let staticMapData = null;
+let audioEnabled = true;
+let audioCtx = null;
+let lastAlertId = null;
+let activeRescueRoute = null;
 
 // Canvas & Viewport
 const canvas = document.getElementById('radarCanvas');
@@ -24,7 +28,6 @@ let showTrails = true;
 
 // Key state for teleoperation
 const activeKeys = {};
-let teleopTimer = null;
 
 // --- Initialize App ---
 window.addEventListener('DOMContentLoaded', async () => {
@@ -42,6 +45,7 @@ window.addEventListener('DOMContentLoaded', async () => {
 
 function setupCanvasSize() {
   const container = document.getElementById('canvasViewport');
+  if (!container) return;
   const size = Math.min(container.clientWidth, container.clientHeight);
   canvas.width = size;
   canvas.height = size;
@@ -55,6 +59,47 @@ async function fetchStaticMap() {
     staticMapData = await res.json();
   } catch (err) {
     console.error('Failed to load static map:', err);
+  }
+}
+
+// --- Web Audio API Emergency Siren / Alarm Chime ---
+function playRescueAlertSound() {
+  if (!audioEnabled) return;
+  try {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (!audioCtx) audioCtx = new AudioContext();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+
+    const now = audioCtx.currentTime;
+    const osc1 = audioCtx.createOscillator();
+    const osc2 = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+
+    osc1.type = 'sawtooth';
+    osc2.type = 'sine';
+
+    // Emergency warble tone (880Hz -> 1320Hz)
+    osc1.frequency.setValueAtTime(880, now);
+    osc1.frequency.linearRampToValueAtTime(1320, now + 0.18);
+    osc1.frequency.linearRampToValueAtTime(880, now + 0.36);
+
+    osc2.frequency.setValueAtTime(440, now);
+    osc2.frequency.linearRampToValueAtTime(660, now + 0.18);
+    osc2.frequency.linearRampToValueAtTime(440, now + 0.36);
+
+    gain.gain.setValueAtTime(0.18, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+
+    osc1.connect(gain);
+    osc2.connect(gain);
+    gain.connect(audioCtx.destination);
+
+    osc1.start(now);
+    osc2.start(now);
+    osc1.stop(now + 0.46);
+    osc2.stop(now + 0.46);
+  } catch (e) {
+    console.log('Audio alert error or blocked by browser policy:', e);
   }
 }
 
@@ -103,7 +148,7 @@ function worldToScreen(wx, wy) {
   const cy = canvas.height / 2 + viewOffsetY;
   return {
     x: cx + wx * viewScale,
-    y: cy - wy * viewScale // Invert Y for Cartesian
+    y: cy - wy * viewScale // Invert Y for Cartesian coordinates
   };
 }
 
@@ -132,6 +177,31 @@ function setupUIEventListeners() {
     });
   });
 
+  // Audio Toggle Button
+  const btnToggleAudio = document.getElementById('btnToggleAudio');
+  btnToggleAudio.addEventListener('click', () => {
+    audioEnabled = !audioEnabled;
+    const icon = document.getElementById('audio-icon');
+    if (audioEnabled) {
+      btnToggleAudio.innerHTML = '<span id="audio-icon">🔊</span> AUDIO: ON';
+      btnToggleAudio.style.color = 'var(--text-secondary)';
+    } else {
+      btnToggleAudio.innerHTML = '<span id="audio-icon">🔇</span> AUDIO: MUTED';
+      btnToggleAudio.style.color = '#ef4444';
+    }
+  });
+
+  // Vision Mode Switcher
+  document.querySelectorAll('.btn-vision-mode').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.btn-vision-mode').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const mode = btn.getAttribute('data-mode');
+      document.getElementById('vision-mode-tag').innerText = btn.innerText;
+      sendWsCommand({ type: 'sar_mode', mode: mode });
+    });
+  });
+
   // Center button
   document.getElementById('btnRecenter').addEventListener('click', () => {
     viewOffsetX = 0.0;
@@ -148,9 +218,9 @@ function setupUIEventListeners() {
     showTrails = !showTrails;
   });
 
-  // Mission buttons
-  document.getElementById('btnPatrol').addEventListener('click', () => {
-    sendWsCommand({ type: 'action', action: 'patrol' });
+  // Mission Buttons
+  document.getElementById('btnSarSweep').addEventListener('click', () => {
+    sendWsCommand({ type: 'sar_action', action: 'sweep' });
   });
 
   document.getElementById('btnPause').addEventListener('click', () => {
@@ -159,34 +229,76 @@ function setupUIEventListeners() {
 
   document.getElementById('btnReset').addEventListener('click', () => {
     sendWsCommand({ type: 'action', action: 'reset' });
+    activeRescueRoute = null;
+    document.getElementById('emergencyBanner').style.display = 'none';
   });
 
+  document.getElementById('btnReturnToBase').addEventListener('click', () => {
+    sendWsCommand({ type: 'sar_action', action: 'rtb' });
+  });
+
+  // Export Buttons
   document.getElementById('btnExportCsv').addEventListener('click', () => {
     window.location.href = '/api/export_csv';
   });
 
+  document.getElementById('btnExportManifest').addEventListener('click', async () => {
+    try {
+      const res = await fetch('/api/sar/manifest');
+      const data = await res.json();
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `sar_casualty_manifest_${Date.now()}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error('Failed to export manifest:', e);
+    }
+  });
+
+  // Disaster Event Buttons
+  document.getElementById('btnEventAftershock').addEventListener('click', () => {
+    sendWsCommand({ type: 'sar_action', action: 'disaster_event', event_type: 'aftershock' });
+  });
+
+  document.getElementById('btnEventFireFlare').addEventListener('click', () => {
+    sendWsCommand({ type: 'sar_action', action: 'disaster_event', event_type: 'fire_flare' });
+  });
+
+  document.getElementById('btnEventSmoke').addEventListener('click', () => {
+    sendWsCommand({ type: 'sar_action', action: 'disaster_event', event_type: 'smoke_blackout' });
+  });
+
   // Fault Toggles
-  const toggleSlip = document.getElementById('toggleSlip');
-  const toggleBlackout = document.getElementById('toggleBlackout');
-  const toggleImuBias = document.getElementById('toggleImuBias');
-
-  toggleSlip.addEventListener('change', () => {
-    sendWsCommand({ type: 'fault', wheel_slip: toggleSlip.checked });
+  document.getElementById('toggleSlip').addEventListener('change', (e) => {
+    sendWsCommand({ type: 'fault', wheel_slip: e.target.checked });
+  });
+  document.getElementById('toggleBlackout').addEventListener('change', (e) => {
+    sendWsCommand({ type: 'fault', vslam_blackout: e.target.checked });
+  });
+  document.getElementById('toggleImuBias').addEventListener('change', (e) => {
+    sendWsCommand({ type: 'fault', imu_bias: e.target.checked });
   });
 
-  toggleBlackout.addEventListener('change', () => {
-    sendWsCommand({ type: 'fault', vslam_blackout: toggleBlackout.checked });
+  // Emergency Banner Actions
+  document.getElementById('btnBannerDismiss').addEventListener('click', () => {
+    document.getElementById('emergencyBanner').style.display = 'none';
   });
 
-  toggleImuBias.addEventListener('change', () => {
-    sendWsCommand({ type: 'fault', imu_bias: toggleImuBias.checked });
+  document.getElementById('btnBannerDispatch').addEventListener('click', () => {
+    if (lastAlertId) {
+      dispatchRescue(lastAlertId);
+    }
+    document.getElementById('emergencyBanner').style.display = 'none';
   });
 
-  // D-Pad buttons
-  setupDpadButton('dpad-up', 0.8, 0.0);
-  setupDpadButton('dpad-down', -0.6, 0.0);
-  setupDpadButton('dpad-left', 0.2, 1.2);
-  setupDpadButton('dpad-right', 0.2, -1.2);
+  // D-Pad Touch / Click Buttons
+  setupDpadButton('dpad-up', 0.85, 0.0);
+  setupDpadButton('dpad-down', -0.65, 0.0);
+  setupDpadButton('dpad-left', 0.0, 1.25);
+  setupDpadButton('dpad-right', 0.0, -1.25);
   document.getElementById('dpad-stop').addEventListener('click', () => {
     sendWsCommand({ type: 'teleop', v: 0.0, omega: 0.0 });
   });
@@ -194,9 +306,10 @@ function setupUIEventListeners() {
 
 function setupDpadButton(id, v, omega) {
   const btn = document.getElementById(id);
+  if (!btn) return;
   const start = (e) => {
     e.preventDefault();
-    sendWsCommand({ type: 'teleop', v: v, omega: omega });
+    sendWsCommand({ type: 'teleop', v, omega });
   };
   const stop = (e) => {
     e.preventDefault();
@@ -248,18 +361,46 @@ function processKeyboardDrive() {
   }
 }
 
+// --- Dispatch Rescue API Call ---
+async function dispatchRescue(survivorId) {
+  try {
+    const res = await fetch('/api/sar/action', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'rescue', survivor_id: survivorId })
+    });
+    const result = await res.json();
+    if (result.status === 'ok' && result.ingress_route) {
+      activeRescueRoute = result.ingress_route;
+    }
+  } catch (err) {
+    console.error('Failed to dispatch rescue:', err);
+  }
+}
+
+async function markRescued(survivorId) {
+  try {
+    await fetch('/api/sar/action', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'mark_rescued', survivor_id: survivorId })
+    });
+  } catch (err) {
+    console.error('Failed to mark rescued:', err);
+  }
+}
+
 // --- Update Telemetry UI ---
 function updateTelemetryUI(data) {
   if (!data) return;
 
   // Header badges
-  const badgeGps = document.getElementById('badge-gps');
   const badgeVslam = document.getElementById('badge-vslam');
   const badgeEkf = document.getElementById('badge-ekf');
 
   if (data.watchdog.vslam_degraded || data.in_dropout_zone) {
     badgeVslam.className = 'badge badge-danger blink';
-    badgeVslam.innerHTML = '<span class="badge-dot"></span> VSLAM: DROPOUT / BLACKOUT';
+    badgeVslam.innerHTML = '<span class="badge-dot"></span> VSLAM: DROPOUT / SMOKE';
   } else {
     badgeVslam.className = 'badge badge-success';
     badgeVslam.innerHTML = '<span class="badge-dot"></span> VSLAM: 15 Hz TRACKING';
@@ -267,7 +408,7 @@ function updateTelemetryUI(data) {
 
   if (data.watchdog.wheel_slipping) {
     badgeEkf.className = 'badge badge-danger blink';
-    badgeEkf.innerHTML = '<span class="badge-dot"></span> EKF: SLIP DETECTED';
+    badgeEkf.innerHTML = '<span class="badge-dot"></span> EKF: RUBBLE SLIP';
   } else {
     badgeEkf.className = 'badge badge-info';
     badgeEkf.innerHTML = '<span class="badge-dot"></span> EKF: 15-STATE NOMINAL';
@@ -281,7 +422,7 @@ function updateTelemetryUI(data) {
 
   // Mode and target display
   document.getElementById('radar-mode-display').innerText = `MODE: ${data.mode}`;
-  const targetName = data.current_goal ? data.current_goal.name : 'None';
+  const targetName = data.current_goal ? data.current_goal.name : 'Sector Sweep';
   document.getElementById('radar-target-display').innerText = `TARGET: ${targetName}`;
 
   // Pause button state
@@ -327,7 +468,7 @@ function updateTelemetryUI(data) {
   document.getElementById('odom-rmse').innerText = `${mtr.rmse_odom.toFixed(2)} m`;
   document.getElementById('odom-max-err').innerText = `Max: ${mtr.max_err_odom.toFixed(2)} m`;
 
-  // Render Sparkline Error Chart
+  // Sparkline Error Chart
   renderErrorChart(mtr.recent_ate_odom, mtr.recent_ate_ekf);
 
   // Watchdog Alerts Terminal
@@ -335,6 +476,115 @@ function updateTelemetryUI(data) {
 
   // Checkpoints list
   updateCheckpointsList(data.checkpoints, data.active_wp_idx, data.mode);
+
+  // Update SAR Specific Features: Camera stream, Detections, Triage
+  if (data.sar) {
+    updateSARFeatures(data.sar);
+  }
+}
+
+// --- Update Search & Rescue Video Stream & Triage ---
+function updateSARFeatures(sar) {
+  // 1. Camera Stream Frame
+  const cameraImg = document.getElementById('cameraStreamImg');
+  if (sar.camera_frame && sar.camera_frame.length > 50) {
+    cameraImg.src = sar.camera_frame;
+  }
+
+  // 2. Detection Counter & Active Detection Pill
+  const numDets = sar.active_detections ? sar.active_detections.length : 0;
+  document.getElementById('hud-det-count').innerText = `${numDets} HUMAN DETECTIONS`;
+
+  const detBox = document.getElementById('activeDetectionBox');
+  if (numDets > 0) {
+    const primary = sar.active_detections[0];
+    document.getElementById('det-target-name').innerText = `${primary.name}`;
+    document.getElementById('det-conf').innerText = `${Math.round(primary.confidence * 100)}%`;
+    document.getElementById('det-range').innerText = `${primary.dist_m} m`;
+    document.getElementById('det-temp').innerText = `${primary.temp_c} °C`;
+    document.getElementById('det-triage').innerText = `${primary.triage}`;
+  } else {
+    document.getElementById('det-target-name').innerText = 'SECTOR CLEAR // SEARCHING...';
+    document.getElementById('det-conf').innerText = '--%';
+    document.getElementById('det-range').innerText = '-- m';
+    document.getElementById('det-temp').innerText = '-- °C';
+    document.getElementById('det-triage').innerText = '--';
+  }
+
+  // 3. Triage Counts
+  const tc = sar.triage_counts || { RED: 0, YELLOW: 0, GREEN: 0, RESCUED: 0, TOTAL: 4 };
+  document.getElementById('count-red').innerText = tc.RED;
+  document.getElementById('count-yellow').innerText = tc.YELLOW;
+  document.getElementById('count-green').innerText = tc.GREEN;
+  document.getElementById('count-rescued').innerText = tc.RESCUED;
+  document.getElementById('triage-status-txt').innerText = `${tc.TOTAL - tc.RESCUED} ACTIVE (${tc.RED} RED)`;
+
+  // 4. Render Survivor Triage Manifest Cards
+  renderSurvivorCards(sar.survivors || []);
+
+  // 5. Check for New Urgent Alerts
+  if (sar.sar_alerts && sar.sar_alerts.length > 0) {
+    const latestAlert = sar.sar_alerts[0];
+    if (latestAlert.id !== lastAlertId) {
+      lastAlertId = latestAlert.id;
+      showEmergencyBanner(latestAlert);
+      playRescueAlertSound();
+    }
+  }
+}
+
+function showEmergencyBanner(alert) {
+  const banner = document.getElementById('emergencyBanner');
+  document.getElementById('bannerHeadline').innerText = `🚨 CRITICAL SURVIVOR LOCATED: ${alert.name}`;
+  document.getElementById('bannerSub').innerText = 
+    `Grid: (X: ${alert.world_x}m, Y: ${alert.world_y}m) | TRIAGE ${alert.triage} | Temp: ${alert.temp_c}°C | Vitals: ${alert.vitals_summary}`;
+  banner.style.display = 'block';
+}
+
+function renderSurvivorCards(survivors) {
+  const container = document.getElementById('survivorCardsContainer');
+  if (!container) return;
+
+  container.innerHTML = '';
+  survivors.forEach(s => {
+    const card = document.createElement('div');
+    const isDiscovered = s.discovered;
+    const isRescued = s.rescued;
+
+    let triageClass = s.triage === 'RED' ? 'critical' : (s.triage === 'YELLOW' ? 'delayed' : 'minor');
+    if (isRescued) triageClass = 'rescued';
+
+    card.className = `survivor-card ${isDiscovered ? 'discovered' : ''} ${triageClass}`;
+
+    let badgeColor = s.triage === 'RED' ? 'badge-red' : (s.triage === 'YELLOW' ? 'badge-yellow' : 'badge-green');
+    if (isRescued) badgeColor = 'badge-blue';
+
+    const statusLabel = isRescued ? 'SAFELY EVACUATED' : (isDiscovered ? 'LOCATED // PENDING USAR' : 'SEARCH PENDING');
+
+    card.innerHTML = `
+      <div class="surv-header">
+        <span class="surv-name">${s.name}</span>
+        <span class="surv-badge ${badgeColor}">${isRescued ? 'RESCUED' : s.triage}</span>
+      </div>
+      <div class="surv-sub">
+        <span>📍 Grid: (${s.x.toFixed(1)}m, ${s.y.toFixed(1)}m) &bull; ${statusLabel}</span>
+      </div>
+      <div class="surv-vitals-row">
+        <span>🌡️ ${s.temp_c}°C</span>
+        <span>❤️ ${s.heart_rate_bpm} BPM</span>
+        <span>🔊 ${s.sound_detected ? `${s.sound_db} dB` : 'Silent'}</span>
+      </div>
+      <div class="surv-actions">
+        ${!isRescued ? `
+          <button class="btn-card-action btn-dispatch-team" onclick="dispatchRescue('${s.id}')">DISPATCH USAR</button>
+          <button class="btn-card-action btn-card-rescued" onclick="markRescued('${s.id}')">MARK RESCUED</button>
+        ` : `
+          <div style="font-size: 9px; color: #38bdf8; padding: 2px;">✓ Evacuated to Base Staging Area</div>
+        `}
+      </div>
+    `;
+    container.appendChild(card);
+  });
 }
 
 // --- Render Sparkline Error Chart ---
@@ -345,149 +595,128 @@ function renderErrorChart(odomErrors, ekfErrors) {
   const h = errorCanvas.height;
   errCtx.clearRect(0, 0, w, h);
 
-  // Find max scale
   const maxVal = Math.max(5.0, ...odomErrors, ...ekfErrors);
 
   // Background grid
-  errCtx.strokeStyle = '#1e293b';
+  errCtx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
   errCtx.lineWidth = 1;
   errCtx.beginPath();
-  errCtx.moveTo(0, h * 0.5);
-  errCtx.lineTo(w, h * 0.5);
+  errCtx.moveTo(0, h / 2);
+  errCtx.lineTo(w, h / 2);
   errCtx.stroke();
 
   // Draw Raw Odometry curve (Red)
-  drawLineSeries(odomErrors, maxVal, '#ef4444', 2, [3, 2]);
-
-  // Draw EKF curve (Cyan)
-  drawLineSeries(ekfErrors, maxVal, '#06b6d4', 2.5, []);
+  drawLine(odomErrors, '#ef4444', 1.8, maxVal, w, h);
+  // Draw EKF Fused curve (Cyan)
+  drawLine(ekfErrors, '#06b6d4', 2.2, maxVal, w, h);
 }
 
-function drawLineSeries(dataSeries, maxVal, color, lineWidth, dash) {
-  const w = errorCanvas.width;
-  const h = errorCanvas.height;
-  const step = w / (dataSeries.length - 1);
-
-  errCtx.save();
+function drawLine(points, color, width, maxVal, w, h) {
   errCtx.strokeStyle = color;
-  errCtx.lineWidth = lineWidth;
-  errCtx.setLineDash(dash);
+  errCtx.lineWidth = width;
   errCtx.beginPath();
-
-  dataSeries.forEach((val, i) => {
+  const step = w / (points.length - 1);
+  points.forEach((val, i) => {
     const x = i * step;
     const y = h - (val / maxVal) * (h - 8) - 4;
     if (i === 0) errCtx.moveTo(x, y);
     else errCtx.lineTo(x, y);
   });
   errCtx.stroke();
-  errCtx.restore();
 }
 
-// --- Watchdog Terminal Logs ---
+// --- Watchdog Terminal ---
 function updateWatchdogTerminal(alerts) {
-  if (!alerts) return;
-  const term = document.getElementById('watchdogTerminal');
-  term.innerHTML = '';
+  const terminal = document.getElementById('watchdogTerminal');
+  if (!alerts || !terminal) return;
+
+  terminal.innerHTML = '';
   alerts.forEach(a => {
     const div = document.createElement('div');
-    div.className = `log-line log-${a.level.toLowerCase()}`;
-    div.innerHTML = `<span class="log-t">[${a.timestamp}] [${a.category}]</span> ${a.text}`;
-    term.appendChild(div);
+    const lvlClass = a.level === 'WARN' ? 'log-warn' : (a.level === 'SUCCESS' ? 'log-success' : (a.level === 'WARNING' ? 'log-warn' : 'log-info'));
+    div.className = `log-line ${lvlClass}`;
+    div.innerHTML = `<span class="log-t">[${a.timestamp || ''} ${a.category}]</span> ${a.text}`;
+    terminal.appendChild(div);
   });
-  term.scrollTop = term.scrollHeight;
+  terminal.scrollTop = terminal.scrollHeight;
 }
 
-// --- Checkpoints Checklist ---
+// --- Checkpoints List ---
 function updateCheckpointsList(checkpoints, activeIdx, mode) {
-  if (!checkpoints) return;
-  const list = document.getElementById('waypointsList');
-  list.innerHTML = '';
+  const container = document.getElementById('waypointsList');
+  if (!checkpoints || !container) return;
 
+  container.innerHTML = '';
   checkpoints.forEach((wp, idx) => {
     const item = document.createElement('div');
-    const isActive = (mode === 'PATROL' && idx === activeIdx);
-    const isCleared = (mode === 'PATROL' && idx < activeIdx);
-
-    item.className = `wp-item ${isActive ? 'active' : ''} ${isCleared ? 'cleared' : ''}`;
-    
-    let dotClass = 'pending';
-    if (isActive) dotClass = 'active';
-    else if (isCleared) dotClass = 'cleared';
-
+    const isActive = (idx === activeIdx) && (mode === 'PATROL' || mode === 'SAR_SWEEP');
+    item.className = `wp-item ${isActive ? 'active' : ''}`;
     item.innerHTML = `
-      <span><span class="wp-status-dot ${dotClass}"></span> <b>${wp.id}</b>: ${wp.name.split('(')[0]}</span>
-      <span style="color: #64748b;">(${wp.x}, ${wp.y})</span>
+      <span class="wp-bullet">${isActive ? '▶' : '○'}</span>
+      <span class="wp-name">${wp.name}</span>
+      <span class="wp-coords">(${wp.x.toFixed(1)}, ${wp.y.toFixed(1)})</span>
     `;
-    list.appendChild(item);
+    item.addEventListener('click', () => {
+      sendWsCommand({ type: 'goal', x: wp.x, y: wp.y });
+    });
+    container.appendChild(item);
   });
 }
 
 // ==========================================================================
-// 60 FPS Tactical Radar Render Loop
+// 60 FPS Canvas Radar Render Loop
 // ==========================================================================
 function renderLoop() {
-  drawRadar();
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  if (staticMapData) {
+    drawGrid();
+    drawDropoutZone(staticMapData.dropout_zone);
+    drawBunkerObstacles();
+    drawRubblePiles(staticMapData.rubble_piles || []);
+    drawHazards(staticMapData.hazards || []);
+    drawCheckpoints(staticMapData.checkpoints || []);
+  }
+
+  if (telemetryData) {
+    if (telemetryData.planned_path) {
+      drawPlannedPath(telemetryData.planned_path);
+    }
+
+    if (activeRescueRoute) {
+      drawRescueIngressRoute(activeRescueRoute);
+    }
+
+    if (showTrails && telemetryData.trails) {
+      drawTrails(telemetryData.trails);
+    }
+
+    if (showLidar && telemetryData.lidar) {
+      drawLidarRays(telemetryData.lidar, telemetryData.gt);
+    }
+
+    // Draw Survivors on Map
+    if (telemetryData.sar && telemetryData.sar.survivors) {
+      drawSurvivorsOnRadar(telemetryData.sar.survivors);
+    }
+
+    // Ghost Odometry (drifted)
+    drawGhostOdomRobot(telemetryData.odom);
+
+    // EKF Covariance Uncertainty Ellipse
+    drawCovarianceEllipse(telemetryData.ekf);
+
+    // Camera FOV Viewing Cone
+    drawCameraCone(telemetryData.gt);
+
+    // Live Chassis (Ground Truth)
+    drawUgvChassis(telemetryData.gt);
+  }
+
   requestAnimationFrame(renderLoop);
 }
 
-function drawRadar() {
-  const w = canvas.width;
-  const h = canvas.height;
-
-  // Clear canvas
-  ctx.clearRect(0, 0, w, h);
-
-  // 1. Draw Tactical Grid
-  drawGrid();
-
-  // 2. Draw Optical Blackout Zone
-  if (staticMapData && staticMapData.dropout_zone) {
-    drawDropoutZone(staticMapData.dropout_zone);
-  }
-
-  // 3. Draw Bunker Obstacles (Walls, Pillars, Crates)
-  if (staticMapData) {
-    drawBunkerObstacles();
-  }
-
-  // 4. Draw Checkpoint Waypoints
-  if (staticMapData && staticMapData.checkpoints) {
-    drawCheckpoints(staticMapData.checkpoints);
-  }
-
-  // 5. Draw A* Nav2 Planned Path
-  if (telemetryData && telemetryData.planned_path && telemetryData.planned_path.length > 0) {
-    drawPlannedPath(telemetryData.planned_path);
-  }
-
-  // 6. Draw Trajectory Trails
-  if (showTrails && telemetryData && telemetryData.trails) {
-    drawTrails(telemetryData.trails);
-  }
-
-  // 7. Draw 2D LiDAR Rays
-  if (showLidar && telemetryData && telemetryData.lidar && telemetryData.gt) {
-    drawLidarRays(telemetryData.lidar, telemetryData.gt);
-  }
-
-  // 8. Draw Ghost Raw Odometry Robot
-  if (telemetryData && telemetryData.odom) {
-    drawGhostOdomRobot(telemetryData.odom);
-  }
-
-  // 9. Draw EKF Covariance Uncertainty Ellipse
-  if (telemetryData && telemetryData.ekf) {
-    drawCovarianceEllipse(telemetryData.ekf);
-  }
-
-  // 10. Draw Live UGV Chassis (Ground Truth)
-  if (telemetryData && telemetryData.gt) {
-    drawUgvChassis(telemetryData.gt);
-  }
-}
-
-// 1. Grid
+// 1. Grid & Coordinates
 function drawGrid() {
   const w = canvas.width;
   const h = canvas.height;
@@ -509,19 +738,11 @@ function drawGrid() {
     ctx.moveTo(p3.x, p3.y);
     ctx.lineTo(p4.x, p4.y);
     ctx.stroke();
-
-    // Coordinate text
-    if (m % 10 === 0) {
-      ctx.fillStyle = '#475569';
-      ctx.font = '9px JetBrains Mono';
-      ctx.fillText(`${m}m`, p1.x + 3, h - 8);
-      ctx.fillText(`${m}m`, 8, p3.y - 3);
-    }
   }
 
-  // Crosshair center
+  // Crosshair center (0, 0) Base Station
   const center = worldToScreen(0, 0);
-  ctx.strokeStyle = 'rgba(6, 182, 212, 0.3)';
+  ctx.strokeStyle = 'rgba(6, 182, 212, 0.4)';
   ctx.lineWidth = 1.5;
   ctx.beginPath();
   ctx.arc(center.x, center.y, 14, 0, Math.PI * 2);
@@ -533,11 +754,16 @@ function drawGrid() {
   ctx.lineTo(center.x, center.y + 20);
   ctx.stroke();
 
+  ctx.fillStyle = '#38bdf8';
+  ctx.font = '10px JetBrains Mono';
+  ctx.fillText('BASE STAGING', center.x + 16, center.y - 6);
+
   ctx.restore();
 }
 
-// 2. Optical Blackout Zone
+// 2. Optical Dropout / Smoke Zone
 function drawDropoutZone(zone) {
+  if (!zone) return;
   const p1 = worldToScreen(zone.x_min, zone.y_max);
   const p2 = worldToScreen(zone.x_max, zone.y_min);
   const zw = p2.x - p1.x;
@@ -551,62 +777,120 @@ function drawDropoutZone(zone) {
   ctx.fillRect(p1.x, p1.y, zw, zh);
   ctx.strokeRect(p1.x, p1.y, zw, zh);
 
-  // Label
   ctx.fillStyle = '#f87171';
   ctx.font = '10px JetBrains Mono';
-  ctx.fillText('⚠ OPTICAL BLACKOUT // IR JAMMED', p1.x + 8, p1.y + 16);
+  ctx.fillText('⚠ DENSE SMOKE & COLLAPSE ZONE', p1.x + 8, p1.y + 16);
   ctx.restore();
 }
 
-// 3. Bunker Obstacles
+// 3. Bunker Walls & Pillars
 function drawBunkerObstacles() {
   ctx.save();
-
-  // Walls
   ctx.strokeStyle = '#38bdf8';
   ctx.lineWidth = 3;
   ctx.shadowColor = 'rgba(56, 189, 248, 0.3)';
   ctx.shadowBlur = 8;
 
-  staticMapData.walls.forEach(w => {
-    const p1 = worldToScreen(w[0], w[1]);
-    const p2 = worldToScreen(w[2], w[3]);
-    ctx.beginPath();
-    ctx.moveTo(p1.x, p1.y);
-    ctx.lineTo(p2.x, p2.y);
-    ctx.stroke();
-  });
+  if (staticMapData.walls) {
+    staticMapData.walls.forEach(w => {
+      const p1 = worldToScreen(w[0], w[1]);
+      const p2 = worldToScreen(w[2], w[3]);
+      ctx.beginPath();
+      ctx.moveTo(p1.x, p1.y);
+      ctx.lineTo(p2.x, p2.y);
+      ctx.stroke();
+    });
+  }
   ctx.shadowBlur = 0;
 
-  // Pillars
-  staticMapData.pillars.forEach((p, idx) => {
-    const sc = worldToScreen(p[0], p[1]);
-    const r = p[2] * viewScale;
+  if (staticMapData.pillars) {
+    staticMapData.pillars.forEach((p, idx) => {
+      const sc = worldToScreen(p[0], p[1]);
+      const r = p[2] * viewScale;
 
-    ctx.fillStyle = '#1e293b';
-    ctx.strokeStyle = '#06b6d4';
-    ctx.lineWidth = 2;
+      ctx.fillStyle = '#1e293b';
+      ctx.strokeStyle = '#06b6d4';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(sc.x, sc.y, r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '9px JetBrains Mono';
+      ctx.fillText(`P${idx + 1}`, sc.x - 6, sc.y + 3);
+    });
+  }
+  ctx.restore();
+}
+
+// 4. Disaster Rubble Piles
+function drawRubblePiles(rubble) {
+  ctx.save();
+  rubble.forEach(([rx, ry, radius], idx) => {
+    const sc = worldToScreen(rx, ry);
+    const r = radius * viewScale;
+
+    // Draw rubble jagged cluster
+    ctx.fillStyle = 'rgba(71, 85, 105, 0.85)';
+    ctx.strokeStyle = '#94a3b8';
+    ctx.lineWidth = 1.5;
+
     ctx.beginPath();
     ctx.arc(sc.x, sc.y, r, 0, Math.PI * 2);
     ctx.fill();
     ctx.stroke();
 
-    // Pulse ring
-    ctx.strokeStyle = 'rgba(6, 182, 212, 0.4)';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.arc(sc.x, sc.y, r + 4, 0, Math.PI * 2);
-    ctx.stroke();
-
-    ctx.fillStyle = '#94a3b8';
-    ctx.font = '9px JetBrains Mono';
-    ctx.fillText(`P${idx + 1}`, sc.x - 6, sc.y + 3);
+    ctx.fillStyle = '#cbd5e1';
+    ctx.font = '8px JetBrains Mono';
+    ctx.fillText(`RUBBLE`, sc.x - 14, sc.y + 3);
   });
-
   ctx.restore();
 }
 
-// 4. Checkpoints
+// 5. Fire & Gas Hazards
+function drawHazards(hazards) {
+  const t = Date.now() * 0.003;
+  ctx.save();
+
+  hazards.forEach(haz => {
+    const sc = worldToScreen(haz.x, haz.y);
+    const pulse = Math.sin(t + haz.x) * 4;
+    const r = haz.radius * viewScale + pulse;
+
+    if (haz.temp_c > 100) {
+      // Fire glow
+      const grad = ctx.createRadialGradient(sc.x, sc.y, 2, sc.x, sc.y, r);
+      grad.addColorStop(0, 'rgba(255, 200, 0, 0.85)');
+      grad.addColorStop(0.5, 'rgba(239, 68, 68, 0.55)');
+      grad.addColorStop(1, 'rgba(185, 28, 28, 0.05)');
+
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(sc.x, sc.y, r, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = '#ffedd5';
+      ctx.font = '9px JetBrains Mono';
+      ctx.fillText(`🔥 ${haz.temp_c}°C`, sc.x - 18, sc.y - r - 4);
+    } else {
+      // Collapse danger zone
+      ctx.strokeStyle = 'rgba(245, 158, 11, 0.6)';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([5, 3]);
+      ctx.beginPath();
+      ctx.arc(sc.x, sc.y, r, 0, Math.PI * 2);
+      ctx.stroke();
+
+      ctx.fillStyle = '#fbbf24';
+      ctx.font = '9px JetBrains Mono';
+      ctx.fillText(`⚠️ COLLAPSE`, sc.x - 24, sc.y - r - 4);
+    }
+  });
+  ctx.restore();
+}
+
+// 6. Checkpoints
 function drawCheckpoints(checkpoints) {
   ctx.save();
   checkpoints.forEach((wp) => {
@@ -617,20 +901,103 @@ function drawCheckpoints(checkpoints) {
     ctx.lineWidth = 1.5;
 
     ctx.beginPath();
-    ctx.arc(sc.x, sc.y, 6, 0, Math.PI * 2);
+    ctx.arc(sc.x, sc.y, 5, 0, Math.PI * 2);
     ctx.fill();
     ctx.stroke();
 
     ctx.fillStyle = '#e2e8f0';
-    ctx.font = '10px JetBrains Mono';
-    ctx.fillText(wp.id, sc.x + 8, sc.y + 3);
+    ctx.font = '9px JetBrains Mono';
+    ctx.fillText(wp.id, sc.x + 7, sc.y + 3);
   });
   ctx.restore();
 }
 
-// 5. A* Planned Path
+// 7. Survivors on Radar
+function drawSurvivorsOnRadar(survivors) {
+  const t = Date.now() * 0.005;
+  ctx.save();
+
+  survivors.forEach(s => {
+    const sc = worldToScreen(s.x, s.y);
+    const pulseR = 8 + Math.sin(t + s.x) * 3;
+
+    let color = s.triage === 'RED' ? '#ef4444' : (s.triage === 'YELLOW' ? '#f59e0b' : '#10b981');
+    if (s.rescued) color = '#06b6d4';
+
+    // Pulsing outer ring
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(sc.x, sc.y, pulseR + 4, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Center dot / cross
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.arc(sc.x, sc.y, 5, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Label
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '9px JetBrains Mono';
+    const tag = s.rescued ? `✓ ${s.id}` : `${s.id} (${s.triage})`;
+    ctx.fillText(tag, sc.x + 12, sc.y + 3);
+  });
+
+  ctx.restore();
+}
+
+// 8. Rescuer Ingress Route
+function drawRescueIngressRoute(route) {
+  if (!route || route.length < 2) return;
+  ctx.save();
+  ctx.strokeStyle = '#38bdf8';
+  ctx.lineWidth = 3;
+  ctx.setLineDash([8, 4]);
+
+  ctx.beginPath();
+  route.forEach((pt, i) => {
+    const sc = worldToScreen(pt[0], pt[1]);
+    if (i === 0) ctx.moveTo(sc.x, sc.y);
+    else ctx.lineTo(sc.x, sc.y);
+  });
+  ctx.stroke();
+
+  // Ingress label
+  const mid = worldToScreen(route[Math.floor(route.length / 2)][0], route[Math.floor(route.length / 2)][1]);
+  ctx.fillStyle = '#38bdf8';
+  ctx.font = '10px JetBrains Mono';
+  ctx.fillText('🚑 USAR EXTRACTION CORRIDOR', mid.x + 8, mid.y - 6);
+  ctx.restore();
+}
+
+// 9. Camera Viewing Cone
+function drawCameraCone(robot) {
+  const origin = worldToScreen(robot.x, robot.y);
+  const fov = (72.0 * Math.PI) / 180.0;
+  const range = 6.5 * viewScale;
+
+  const leftAngle = -robot.theta - fov / 2.0;
+  const rightAngle = -robot.theta + fov / 2.0;
+
+  ctx.save();
+  ctx.fillStyle = 'rgba(6, 182, 212, 0.08)';
+  ctx.strokeStyle = 'rgba(6, 182, 212, 0.35)';
+  ctx.lineWidth = 1;
+
+  ctx.beginPath();
+  ctx.moveTo(origin.x, origin.y);
+  ctx.arc(origin.x, origin.y, range, leftAngle, rightAngle);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.restore();
+}
+
+// 10. A* Planned Path
 function drawPlannedPath(path) {
-  if (path.length < 2) return;
+  if (!path || path.length < 2) return;
   ctx.save();
   ctx.strokeStyle = '#c084fc';
   ctx.lineWidth = 2;
@@ -646,15 +1013,10 @@ function drawPlannedPath(path) {
   ctx.restore();
 }
 
-// 6. Trajectory Trails
+// 11. Trajectory Trails
 function drawTrails(trails) {
-  // Ground truth (Green)
   drawSingleTrail(trails.gt, '#10b981', 2, []);
-
-  // Raw Odometry (Red dashed - showing drift!)
   drawSingleTrail(trails.odom, '#ef4444', 1.8, [5, 3]);
-
-  // EKF Fused (Cyan solid)
   drawSingleTrail(trails.ekf, '#06b6d4', 2.2, []);
 }
 
@@ -675,23 +1037,20 @@ function drawSingleTrail(pts, color, width, dash) {
   ctx.restore();
 }
 
-// 7. LiDAR Rays
+// 12. LiDAR Rays
 function drawLidarRays(lidar, robot) {
   const origin = worldToScreen(robot.x, robot.y);
   ctx.save();
 
   lidar.forEach(beam => {
     const hit = worldToScreen(beam.x, beam.y);
-
-    // Laser beam line (translucent yellow)
-    ctx.strokeStyle = 'rgba(234, 179, 8, 0.18)';
+    ctx.strokeStyle = 'rgba(234, 179, 8, 0.16)';
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(origin.x, origin.y);
     ctx.lineTo(hit.x, hit.y);
     ctx.stroke();
 
-    // Laser hit point
     ctx.fillStyle = '#eab308';
     ctx.beginPath();
     ctx.arc(hit.x, hit.y, 2, 0, Math.PI * 2);
@@ -700,7 +1059,7 @@ function drawLidarRays(lidar, robot) {
   ctx.restore();
 }
 
-// 8. Ghost Odometry Robot
+// 13. Ghost Odometry Robot
 function drawGhostOdomRobot(odom) {
   const sc = worldToScreen(odom.x, odom.y);
   ctx.save();
@@ -715,7 +1074,6 @@ function drawGhostOdomRobot(odom) {
   const rh = 0.40 * viewScale;
   ctx.strokeRect(-rw / 2, -rh / 2, rw, rh);
 
-  // Direction pointer
   ctx.beginPath();
   ctx.moveTo(0, 0);
   ctx.lineTo(rw * 0.7, 0);
@@ -724,7 +1082,7 @@ function drawGhostOdomRobot(odom) {
   ctx.restore();
 }
 
-// 9. EKF Covariance Uncertainty Ellipse
+// 14. EKF Covariance Uncertainty Ellipse
 function drawCovarianceEllipse(ekf) {
   const sc = worldToScreen(ekf.x, ekf.y);
   const ellipse = ekf.ellipse;
@@ -735,7 +1093,6 @@ function drawCovarianceEllipse(ekf) {
   ctx.translate(sc.x, sc.y);
   ctx.rotate(-ellipse.angle);
 
-  // 2-sigma boundary
   ctx.strokeStyle = 'rgba(6, 182, 212, 0.75)';
   ctx.lineWidth = 1.5;
   ctx.fillStyle = 'rgba(6, 182, 212, 0.12)';
@@ -748,7 +1105,7 @@ function drawCovarianceEllipse(ekf) {
   ctx.restore();
 }
 
-// 10. Live UGV Chassis (Ground Truth)
+// 15. Live UGV Chassis
 function drawUgvChassis(robot) {
   const sc = worldToScreen(robot.x, robot.y);
   ctx.save();
@@ -760,18 +1117,16 @@ function drawUgvChassis(robot) {
   const wheelW = 0.22 * viewScale;
   const wheelH = 0.10 * viewScale;
 
-  // Left & Right Wheels (Treads)
+  // Left & Right Wheels
   ctx.fillStyle = '#0f172a';
   ctx.strokeStyle = '#475569';
   ctx.lineWidth = 1.5;
-  // Left wheel
   ctx.fillRect(-rw * 0.3, -rh * 0.65, wheelW, wheelH);
   ctx.strokeRect(-rw * 0.3, -rh * 0.65, wheelW, wheelH);
-  // Right wheel
   ctx.fillRect(-rw * 0.3, rh * 0.65 - wheelH, wheelW, wheelH);
   ctx.strokeRect(-rw * 0.3, rh * 0.65 - wheelH, wheelW, wheelH);
 
-  // Main Chassis body
+  // Chassis body
   ctx.fillStyle = '#10b981';
   ctx.strokeStyle = '#34d399';
   ctx.lineWidth = 2;
@@ -799,7 +1154,6 @@ function drawUgvChassis(robot) {
   ctx.lineTo(rw * 0.65, 0);
   ctx.stroke();
 
-  // Arrowhead
   ctx.beginPath();
   ctx.moveTo(rw * 0.65, 0);
   ctx.lineTo(rw * 0.5, -4);

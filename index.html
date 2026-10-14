@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Smart Underground Robot // Simple & Interactive Guide</title>
+  <title>AEGIS-SAR // AI Search & Rescue Robot &bull; Interactive Guide</title>
   <!-- 100% Offline PWA Capabilities -->
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#090d16">
@@ -36,6 +36,9 @@
       --amber: #f59e0b;
       --amber-bg: rgba(245, 158, 11, 0.12);
 
+      --purple: #a855f7;
+      --purple-bg: rgba(168, 85, 247, 0.12);
+
       --font: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
     }
@@ -52,7 +55,7 @@
     }
 
     .container {
-      max-width: 1180px;
+      max-width: 1200px;
       margin: 0 auto;
       padding: 0 20px;
     }
@@ -82,8 +85,8 @@
       color: #fff;
     }
     .radar-icon {
-      width: 24px;
-      height: 24px;
+      width: 26px;
+      height: 26px;
       border: 2px solid var(--cyan-light);
       border-radius: 50%;
       position: relative;
@@ -93,119 +96,155 @@
       position: absolute;
       width: 8px;
       height: 8px;
-      background: var(--green);
+      background: var(--red);
       border-radius: 50%;
       top: 50%; left: 50%;
       transform: translate(-50%, -50%);
       animation: pulse 1.8s infinite;
     }
     @keyframes pulse {
-      0% { transform: translate(-50%, -50%) scale(0.8); opacity: 1; }
-      50% { transform: translate(-50%, -50%) scale(1.4); opacity: 0.5; }
-      100% { transform: translate(-50%, -50%) scale(0.8); opacity: 1; }
+      0% { transform: translate(-50%, -50%) scale(0.8); opacity: 0.7; }
+      50% { transform: translate(-50%, -50%) scale(1.4); opacity: 1; }
+      100% { transform: translate(-50%, -50%) scale(0.8); opacity: 0.7; }
     }
     .brand h1 {
-      font-size: 17px;
+      font-size: 16px;
       font-weight: 800;
       letter-spacing: -0.3px;
+      color: #fff;
     }
     .brand span {
       font-size: 11px;
-      color: var(--cyan);
-      display: block;
+      color: var(--cyan-light);
       font-weight: 600;
+      display: block;
     }
+
     .badge-simple {
-      background: var(--green-bg);
-      border: 1px solid var(--green);
-      color: #6ee7b7;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
       padding: 5px 12px;
       border-radius: 20px;
       font-size: 12px;
-      font-weight: 700;
-      display: flex;
+      color: var(--text-soft);
+      display: inline-flex;
       align-items: center;
       gap: 6px;
     }
-    .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
+    .badge-simple .dot {
+      width: 8px;
+      height: 8px;
+      background: var(--green);
+      border-radius: 50%;
+    }
 
     /* Hero Section */
     .hero {
-      padding: 40px 0 24px 0;
       text-align: center;
+      padding: 48px 0 32px 0;
+      max-width: 900px;
+      margin: 0 auto;
     }
     .hero-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      background: var(--red-bg);
-      border: 1px solid var(--red);
+      display: inline-block;
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid rgba(239, 68, 68, 0.35);
       color: #fca5a5;
-      font-size: 12px;
-      font-weight: 700;
       padding: 4px 14px;
       border-radius: 20px;
+      font-size: 12px;
+      font-weight: 700;
       margin-bottom: 16px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
     .hero-title {
       font-size: 34px;
       font-weight: 900;
       line-height: 1.25;
+      letter-spacing: -0.8px;
       color: #fff;
-      margin-bottom: 12px;
-      letter-spacing: -0.5px;
+      margin-bottom: 16px;
     }
     .hero-title span {
-      color: var(--cyan-light);
+      background: linear-gradient(135deg, #f87171 0%, #38bdf8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
     }
     .hero-subtitle {
       font-size: 16px;
-      color: var(--text-muted);
-      max-width: 780px;
-      margin: 0 auto 28px auto;
+      color: var(--text-soft);
+      line-height: 1.6;
+      margin-bottom: 32px;
     }
 
-    /* 4 Big Simple Impact Cards */
+    /* 4 Big Impact Stat Cards */
     .impact-row {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
-      gap: 14px;
-      margin-bottom: 36px;
+      gap: 16px;
+      margin-bottom: 40px;
     }
     .impact-card {
       background: var(--card-bg);
       border: 1px solid var(--card-border);
-      border-radius: 10px;
-      padding: 16px;
+      border-radius: 12px;
+      padding: 18px 14px;
       text-align: center;
-      position: relative;
-      overflow: hidden;
+      transition: transform 0.2s;
     }
-    .impact-card.green { border-bottom: 3px solid var(--green); }
-    .impact-card.cyan { border-bottom: 3px solid var(--cyan); }
-    .impact-card.amber { border-bottom: 3px solid var(--amber); }
-    .impact-card.purple { border-bottom: 3px solid #a855f7; }
+    .impact-card:hover {
+      transform: translateY(-2px);
+    }
+    .impact-card.green { border-top: 3px solid var(--green); }
+    .impact-card.cyan { border-top: 3px solid var(--cyan); }
+    .impact-card.red { border-top: 3px solid var(--red); }
+    .impact-card.amber { border-top: 3px solid var(--amber); }
 
     .impact-num {
-      font-size: 28px;
+      font-size: 26px;
       font-weight: 900;
-      color: #fff;
+      font-family: var(--font-mono);
       display: block;
-      margin-bottom: 2px;
+      margin-bottom: 4px;
     }
+    .impact-card.green .impact-num { color: var(--green-light); }
+    .impact-card.cyan .impact-num { color: var(--cyan-light); }
+    .impact-card.red .impact-num { color: #f87171; }
+    .impact-card.amber .impact-num { color: #fbbf24; }
+
     .impact-label {
       font-size: 13px;
       font-weight: 700;
-      color: var(--text-soft);
-      margin-bottom: 4px;
+      color: #fff;
+      margin-bottom: 2px;
     }
     .impact-sub {
       font-size: 11px;
       color: var(--text-muted);
     }
 
+    /* Emergency Alert Pop-Down */
+    .rescue-alert-toast {
+      background: linear-gradient(90deg, #991b1b 0%, #dc2626 100%);
+      border: 1px solid #fecaca;
+      border-radius: 8px;
+      color: #fff;
+      padding: 12px 18px;
+      margin-bottom: 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 4px 20px rgba(220, 38, 38, 0.4);
+    }
+    .toast-msg {
+      font-size: 13px;
+      font-weight: 700;
+    }
+
     /* ==========================================================================
-       THE INTERACTIVE SIMULATOR (MAIN HERO SECTION)
+       THE INTERACTIVE SIMULATOR (HERO PLATFORM)
        ========================================================================== */
     .sim-wrapper {
       background: var(--card-bg);
@@ -233,7 +272,6 @@
       gap: 8px;
     }
 
-    /* Scenario Buttons for Judges */
     .scenario-bar {
       display: flex;
       gap: 8px;
@@ -273,7 +311,7 @@
     /* Simulator Main Grid */
     .sim-body {
       display: grid;
-      grid-template-columns: 1fr 340px;
+      grid-template-columns: 1fr 360px;
       min-height: 540px;
     }
 
@@ -282,7 +320,7 @@
       padding: 16px;
       position: relative;
       display: flex;
-      justify-content: center;
+      flex-direction: column;
       align-items: center;
       border-right: 1px solid var(--card-border);
     }
@@ -296,102 +334,154 @@
       max-width: 100%;
       height: auto;
     }
-
     .canvas-hint {
-      position: absolute;
-      bottom: 24px;
-      left: 24px;
-      background: rgba(17, 24, 39, 0.9);
-      border: 1px solid var(--card-border);
-      padding: 8px 14px;
-      border-radius: 6px;
+      margin-top: 10px;
       font-size: 12px;
-      color: var(--text-soft);
-      pointer-events: none;
+      color: var(--text-muted);
+      text-align: center;
     }
 
-    /* Side Control & Status Column */
+    /* AI Camera Mini Screen */
+    .camera-mini-box {
+      width: 100%;
+      background: #070c16;
+      border: 1px solid var(--card-border);
+      border-radius: 6px;
+      padding: 8px;
+      margin-bottom: 12px;
+    }
+    .cam-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+      font-weight: 800;
+      color: var(--cyan-light);
+      margin-bottom: 6px;
+    }
+    #cameraCanvas {
+      width: 100%;
+      height: 120px;
+      background: #03060c;
+      border-radius: 4px;
+      display: block;
+    }
+
+    /* Controls Column */
     .sim-controls {
-      padding: 20px;
+      padding: 16px;
+      background: #0c1322;
       display: flex;
       flex-direction: column;
-      gap: 18px;
-      background: #111827;
+      gap: 12px;
+      overflow-y: auto;
+    }
+
+    .status-banner {
+      background: rgba(16, 185, 129, 0.12);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      padding: 10px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      color: var(--green-light);
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      line-height: 1.4;
+    }
+    .status-banner.alert {
+      background: rgba(239, 68, 68, 0.15);
+      border-color: rgba(239, 68, 68, 0.4);
+      color: #fca5a5;
     }
 
     .status-card {
-      background: #172236;
+      background: #111a2e;
       border: 1px solid var(--card-border);
-      border-radius: 8px;
-      padding: 14px;
+      border-radius: 6px;
+      padding: 12px;
     }
     .status-card-title {
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 800;
-      color: var(--text-muted);
       text-transform: uppercase;
       letter-spacing: 0.5px;
+      color: var(--text-muted);
       margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
     }
 
-    /* Simple Side-by-Side Comparison */
-    .comparison-bars {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-    .comp-item {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
+    /* Comparison Bars */
+    .comp-item { margin-bottom: 8px; }
     .comp-head {
       display: flex;
       justify-content: space-between;
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 700;
+      margin-bottom: 4px;
     }
     .comp-bar-bg {
+      height: 6px;
       background: #1e293b;
-      height: 8px;
-      border-radius: 4px;
+      border-radius: 3px;
       overflow: hidden;
     }
-    .comp-bar-fill {
-      height: 100%;
-      border-radius: 4px;
-      transition: width 0.3s;
-    }
+    .comp-bar-fill { height: 100%; border-radius: 3px; transition: width 0.3s; }
     .fill-green { background: var(--green); }
     .fill-red { background: var(--red); }
 
-    /* Interactive Fault Controls */
+    /* Survivor Manifest Mini Cards */
+    .mini-survivor-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      max-height: 150px;
+      overflow-y: auto;
+    }
+    .mini-surv-item {
+      background: #162035;
+      border: 1px solid var(--card-border);
+      border-radius: 4px;
+      padding: 6px 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+    }
+    .mini-surv-item.red { border-left: 3px solid var(--red); }
+    .mini-surv-item.yellow { border-left: 3px solid var(--amber); }
+    .mini-surv-item.green { border-left: 3px solid var(--green); }
+    .mini-surv-item.rescued { border-left: 3px solid var(--cyan); opacity: 0.6; }
+
+    .btn-mini-action {
+      background: var(--cyan);
+      color: #041017;
+      border: none;
+      font-size: 9px;
+      font-weight: 800;
+      padding: 3px 6px;
+      border-radius: 3px;
+      cursor: pointer;
+    }
+
+    /* Fault Toggles */
     .toggle-row {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      background: #162032;
-      padding: 10px 12px;
-      border-radius: 6px;
-      border: 1px solid var(--card-border);
-      margin-bottom: 8px;
+      padding: 6px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
     }
-    .toggle-txt h4 {
-      font-size: 12px;
-      font-weight: 700;
-      color: #fff;
-    }
-    .toggle-txt p {
-      font-size: 11px;
-      color: var(--text-muted);
-    }
+    .toggle-row:last-child { border-bottom: none; }
+    .toggle-txt h4 { font-size: 12px; font-weight: 700; color: #fff; }
+    .toggle-txt p { font-size: 10px; color: var(--text-muted); }
 
-    /* Switch */
     .switch {
       position: relative;
       display: inline-block;
-      width: 38px;
-      height: 20px;
+      width: 36px;
+      height: 18px;
       flex-shrink: 0;
     }
     .switch input { opacity: 0; width: 0; height: 0; }
@@ -401,13 +491,13 @@
       top: 0; left: 0; right: 0; bottom: 0;
       background-color: #334155;
       transition: .3s;
-      border-radius: 20px;
+      border-radius: 18px;
     }
     .slider:before {
       position: absolute;
       content: "";
-      height: 14px;
-      width: 14px;
+      height: 12px;
+      width: 12px;
       left: 3px;
       bottom: 3px;
       background-color: white;
@@ -417,86 +507,52 @@
     input:checked + .slider { background-color: var(--red); }
     input:checked + .slider:before { transform: translateX(18px); }
 
-    /* D-pad Teleoperation */
+    /* Manual D-Pad */
     .dpad-container {
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 6px;
-      margin-top: 4px;
+      gap: 4px;
     }
-    .dpad-row { display: flex; gap: 6px; }
+    .dpad-row { display: flex; gap: 4px; }
     .dpad-btn {
-      width: 44px;
-      height: 40px;
-      background: #1f293d;
+      width: 38px;
+      height: 32px;
+      background: #1e293b;
       border: 1px solid var(--card-border);
       color: #fff;
-      font-size: 14px;
+      border-radius: 4px;
+      font-size: 12px;
       font-weight: 700;
-      border-radius: 6px;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
-      user-select: none;
-      transition: all 0.15s;
     }
-    .dpad-btn:hover, .dpad-btn:active {
-      background: var(--cyan);
-      color: #000;
-    }
-    .dpad-stop {
-      font-size: 10px;
-      background: rgba(239, 68, 68, 0.2);
-      border-color: var(--red);
-      color: #fca5a5;
-    }
-    .dpad-stop:hover, .dpad-stop:active {
-      background: var(--red);
-      color: #fff;
-    }
+    .dpad-btn:active { background: var(--cyan); color: #000; }
+    .dpad-stop { width: 50px; font-size: 10px; background: rgba(239, 68, 68, 0.2); border-color: var(--red); color: #f87171; }
 
-    /* Live Watchdog Status Banner */
-    .status-banner {
-      background: rgba(16, 185, 129, 0.1);
-      border: 1px solid var(--green);
-      border-radius: 6px;
-      padding: 10px 12px;
-      font-size: 12px;
-      color: #a7f3d0;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .status-banner.alert {
-      background: rgba(239, 68, 68, 0.12);
-      border-color: var(--red);
-      color: #fca5a5;
-    }
-
-    /* ==========================================================================
-       HOW IT WORKS: 3 SIMPLE PICTURES (THE "AHA!" MOMENT)
-       ========================================================================== */
+    /* Educational Section */
     .section-title {
       font-size: 24px;
       font-weight: 800;
-      text-align: center;
       color: #fff;
+      text-align: center;
+      margin-top: 40px;
       margin-bottom: 8px;
     }
     .section-sub {
       text-align: center;
+      color: var(--text-soft);
+      max-width: 700px;
+      margin: 0 auto 32px auto;
       font-size: 15px;
-      color: var(--text-muted);
-      margin-bottom: 32px;
     }
-
     .trio-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       gap: 20px;
-      margin-bottom: 48px;
+      margin-bottom: 40px;
     }
     .trio-card {
       background: var(--card-bg);
@@ -504,27 +560,12 @@
       border-radius: 12px;
       padding: 24px;
       text-align: center;
-      position: relative;
     }
-    .trio-emoji {
-      font-size: 40px;
-      margin-bottom: 12px;
-      display: inline-block;
-    }
-    .trio-card h3 {
-      font-size: 18px;
-      font-weight: 800;
-      color: #fff;
-      margin-bottom: 8px;
-    }
-    .trio-card p {
-      font-size: 14px;
-      color: var(--text-soft);
-      line-height: 1.5;
-      margin-bottom: 14px;
-    }
+    .trio-emoji { font-size: 40px; margin-bottom: 12px; display: inline-block; }
+    .trio-card h3 { font-size: 17px; font-weight: 800; color: #fff; margin-bottom: 8px; }
+    .trio-card p { font-size: 13px; color: var(--text-soft); line-height: 1.5; margin-bottom: 12px; }
     .trio-badge {
-      background: rgba(255, 255, 255, 0.05);
+      background: rgba(255, 255, 255, 0.04);
       border: 1px solid var(--card-border);
       border-radius: 6px;
       padding: 8px 10px;
@@ -533,73 +574,51 @@
     }
     .trio-badge b { color: #fff; }
 
-    /* The Secret Sauce (Brain) Banner */
+    /* Sensor Fusion Brain Banner */
     .fusion-box {
       background: linear-gradient(135deg, rgba(6, 182, 212, 0.15) 0%, rgba(16, 185, 129, 0.15) 100%);
       border: 1px solid rgba(6, 182, 212, 0.4);
       border-radius: 12px;
-      padding: 28px;
-      margin-bottom: 48px;
+      padding: 24px;
+      margin-bottom: 40px;
       display: flex;
       align-items: center;
-      gap: 24px;
+      gap: 20px;
     }
-    .fusion-emoji {
-      font-size: 54px;
-      flex-shrink: 0;
-    }
-    .fusion-text h3 {
-      font-size: 19px;
-      font-weight: 800;
-      color: #fff;
-      margin-bottom: 6px;
-    }
-    .fusion-text p {
-      font-size: 14px;
-      color: var(--text-soft);
-      line-height: 1.6;
-    }
+    .fusion-emoji { font-size: 48px; flex-shrink: 0; }
+    .fusion-text h3 { font-size: 18px; font-weight: 800; color: #fff; margin-bottom: 4px; }
+    .fusion-text p { font-size: 13px; color: var(--text-soft); line-height: 1.6; }
 
-    /* Comparison Table: Before vs After */
+    /* Comparison Table */
     .table-card {
       background: var(--card-bg);
       border: 1px solid var(--card-border);
       border-radius: 12px;
       overflow: hidden;
-      margin-bottom: 48px;
+      margin-bottom: 40px;
     }
-    .simple-table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 14px;
-    }
+    .simple-table { width: 100%; border-collapse: collapse; font-size: 13px; }
     .simple-table th {
       background: #162032;
-      padding: 14px 18px;
+      padding: 12px 16px;
       text-align: left;
       font-weight: 800;
       color: #fff;
       border-bottom: 1px solid var(--card-border);
     }
-    .simple-table td {
-      padding: 14px 18px;
-      border-bottom: 1px solid var(--card-border);
-      color: var(--text-soft);
-    }
-    .simple-table tr:last-child td { border-bottom: none; }
+    .simple-table td { padding: 12px 16px; border-bottom: 1px solid var(--card-border); color: var(--text-soft); }
     .col-bad { color: #fca5a5; font-weight: 600; }
     .col-good { color: #6ee7b7; font-weight: 700; }
 
     /* Footer */
     .footer {
       border-top: 1px solid var(--card-border);
-      padding: 28px 0;
+      padding: 24px 0;
       text-align: center;
       color: var(--text-muted);
-      font-size: 13px;
+      font-size: 12px;
     }
 
-    /* Responsive */
     @media (max-width: 900px) {
       .sim-body { grid-template-columns: 1fr; }
       .impact-row { grid-template-columns: 1fr 1fr; }
@@ -616,17 +635,14 @@
       <a href="#" class="brand">
         <div class="radar-icon"></div>
         <div>
-          <h1>SMART UNDERGROUND NAVIGATOR</h1>
-          <span>GPS-DENIED ROBOTICS // SENSOR FUSION</span>
+          <h1>AEGIS-SAR // AI SEARCH & RESCUE ROBOT</h1>
+          <span>DISASTER RESPONSE &bull; OPENCV AI OBJECT DETECTION &bull; ROS 2 NAV2 &bull; EKF SLAM</span>
         </div>
       </a>
       <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
         <div class="badge-simple">
-          <span class="dot"></span> ⚡ 100% OFFLINE READY &bull; NO INTERNET NEEDED
+          <span class="dot"></span> ⚡ 100% OFFLINE READY &bull; ZERO BUILD TOOLS
         </div>
-        <button id="btnInstallApp" class="btn-scenario" style="display:none; background:rgba(6, 182, 212, 0.2); border-color:var(--cyan); color:#67e8f9; padding:5px 12px;">
-          📥 Install Offline App
-        </button>
       </div>
     </div>
   </header>
@@ -636,57 +652,63 @@
     <!-- Hero Header -->
     <section class="hero">
       <div class="hero-badge">
-        <span>🛰️ NO SATELLITES NEEDED</span>
+        <span>🚨 FEMA / USAR URBAN SEARCH & RESCUE</span>
       </div>
       <h2 class="hero-title">
-        How an Autonomous Robot Navigates Underground <span>Without GPS</span>
+        Locating Trapped Survivors in Collapsed Buildings <span>Using AI & Robotics</span>
       </h2>
       <p class="hero-subtitle">
-        When robots go underground into tunnels or bunkers, GPS satellites vanish.
-        If wheels slip on slick floors, normal robots drift blind and crash.
-        Our robot combines <b>3 smart sensors</b> so it always knows exactly where it is.
+        After earthquakes, fires, and structural collapses, satellite GPS vanishes and smoke blinds standard cameras.
+        AEGIS-SAR navigates rubble without slipping, uses <b>OpenCV Computer Vision and Thermal Heat Sensing</b> to detect human presence,
+        and broadcasts high-priority location alerts with safe extraction routes directly to emergency teams.
       </p>
 
-      <!-- 4 Big Impact Numbers -->
+      <!-- 4 Impact Stats -->
       <div class="impact-row">
         <div class="impact-card green">
-          <span class="impact-num">-84%</span>
+          <span class="impact-num">-83.9%</span>
           <div class="impact-label">Drift Eliminated</div>
-          <div class="impact-sub">Stays locked on course</div>
+          <div class="impact-sub">Centimeter EKF tracking</div>
+        </div>
+        <div class="impact-card red">
+          <span class="impact-num">4 Victims</span>
+          <div class="impact-label">Triaged & Mapped</div>
+          <div class="impact-sub">Red, Yellow, Green status</div>
         </div>
         <div class="impact-card cyan">
-          <span class="impact-num">&plusmn;0.38 m</span>
-          <div class="impact-label">Precision Accuracy</div>
-          <div class="impact-sub">Never hits bunker walls</div>
+          <span class="impact-num">10 FPS</span>
+          <div class="impact-label">OpenCV AI Vision</div>
+          <div class="impact-sub">RGB & Thermal IR fusion</div>
         </div>
         <div class="impact-card amber">
-          <span class="impact-num">3 Sensors</span>
-          <div class="impact-label">Fused Together</div>
-          <div class="impact-sub">Wheels + Gyro + Camera</div>
-        </div>
-        <div class="impact-card purple">
           <span class="impact-num">0.0 s</span>
           <div class="impact-label">Zero Setup Needed</div>
-          <div class="impact-sub">Works on any computer</div>
+          <div class="impact-sub">Opens in any browser</div>
         </div>
       </div>
     </section>
 
+    <!-- Emergency Alert Notification Banner -->
+    <div class="rescue-alert-toast" id="alertToast" style="display:none;">
+      <div class="toast-msg" id="toastMsg">🚨 SURVIVOR DETECTED: Survivor Alpha at (6.5m, 3.5m) | Triage RED IMMEDIATE</div>
+      <button class="btn-scenario" style="background:#fff; color:#991b1b; padding:4px 10px;" onclick="dismissToast()">Acknowledge</button>
+    </div>
+
     <!-- =======================================================================
-         INTERACTIVE SIMULATOR (CLEAN, BOLD, AND FUN TO USE)
+         INTERACTIVE SIMULATOR (MAIN HERO SECTION)
          ======================================================================= -->
     <div class="sim-wrapper">
       <div class="sim-header">
         <div class="sim-header-title">
-          <span>🎮 INTERACTIVE BUNKER SIMULATOR</span>
+          <span>🎮 INTERACTIVE DISASTER SEARCH & RESCUE SIMULATOR</span>
         </div>
         
-        <!-- One-Click Preset Tests for Judges -->
+        <!-- One-Click Preset Tests for Evaluators -->
         <div class="scenario-bar">
-          <span class="scenario-label">Quick Test Scenarios:</span>
-          <button class="btn-scenario active" id="btnNormal">1. Normal Patrol</button>
-          <button class="btn-scenario" id="btnSlip">2. Slippery Floor! (Mud/Oil)</button>
-          <button class="btn-scenario" id="btnBlackout">3. Total Darkness (IR Jamming)</button>
+          <span class="scenario-label">Evaluator Scenarios:</span>
+          <button class="btn-scenario active" id="btnNormal">1. SAR Sector Sweep</button>
+          <button class="btn-scenario" id="btnSlip">2. Wet Rubble Slip</button>
+          <button class="btn-scenario" id="btnBlackout">3. Dense Smoke Blackout</button>
         </div>
       </div>
 
@@ -696,27 +718,50 @@
         <div class="canvas-box">
           <canvas id="mainCanvas" width="700" height="520"></canvas>
           <div class="canvas-hint">
-            🖱️ <b>Click anywhere inside the bunker</b> to send the robot there!
+            🖱️ <b>Click anywhere inside the disaster map</b> to dispatch the robot or inspect rubble!
           </div>
         </div>
 
-        <!-- Clean Controls & Status Column -->
+        <!-- Controls & Status Column -->
         <div class="sim-controls">
           
-          <!-- Live Simple Status -->
+          <!-- Live Status -->
           <div class="status-banner" id="statusBanner">
-            <span>✅</span> <span id="statusText">System Healthy: Robot is patrolling checkpoints.</span>
+            <span>✅</span> <span id="statusText">System Nominal: Robot is sweeping disaster sector 1.</span>
           </div>
 
-          <!-- Simple Side-by-Side Comparison -->
+          <!-- Synthetic AI Camera Viewport -->
+          <div class="camera-mini-box">
+            <div class="cam-header">
+              <span>👁️ ONBOARD OPENCV AI CAMERA</span>
+              <span id="camModeBadge" style="color:var(--cyan); font-size:10px;">AI HUD</span>
+            </div>
+            <canvas id="cameraCanvas" width="320" height="120"></canvas>
+            <div style="display:flex; justify-content:space-between; font-size:10px; margin-top:4px; color:var(--text-muted);">
+              <span id="camTargetTxt">Scanning rubble...</span>
+              <span id="camRangeTxt">Range: -- m</span>
+            </div>
+          </div>
+
+          <!-- Survivor Triage Manifest -->
+          <div class="status-card">
+            <div class="status-card-title">
+              <span>Survivor Triage Queue</span>
+              <span style="color:var(--red);" id="triageCountTxt">2 Immediate</span>
+            </div>
+            <div class="mini-survivor-list" id="miniSurvList">
+              <!-- Dynamically rendered -->
+            </div>
+          </div>
+
+          <!-- Live Drift Comparison -->
           <div class="status-card">
             <div class="status-card-title">Live Drift Comparison</div>
             <div class="comparison-bars">
-              
               <div class="comp-item">
                 <div class="comp-head">
-                  <span style="color:var(--green)">🟢 Smart Robot (Our EKF)</span>
-                  <span id="txtEkfErr" style="color:var(--green)">0.22 m</span>
+                  <span style="color:var(--green)">🟢 EKF Fused (Our System)</span>
+                  <span id="txtEkfErr" style="color:var(--green)">0.22 m (Safe)</span>
                 </div>
                 <div class="comp-bar-bg">
                   <div class="comp-bar-fill fill-green" id="barEkf" style="width: 15%;"></div>
@@ -725,25 +770,23 @@
 
               <div class="comp-item">
                 <div class="comp-head">
-                  <span style="color:var(--red)">🔴 Dumb Robot (No Fusion)</span>
-                  <span id="txtOdomErr" style="color:var(--red)">2.85 m</span>
+                  <span style="color:var(--red)">🔴 Raw Wheel Odometry</span>
+                  <span id="txtOdomErr" style="color:var(--red)">2.85 m (Drifting!)</span>
                 </div>
                 <div class="comp-bar-bg">
                   <div class="comp-bar-fill fill-red" id="barOdom" style="width: 85%;"></div>
                 </div>
               </div>
-
             </div>
           </div>
 
-          <!-- Test Fault Toggles -->
+          <!-- Sensor Hazards Stress-Test -->
           <div class="status-card">
-            <div class="status-card-title">Stress-Test Sensor Hazards</div>
-            
+            <div class="status-card-title">Disaster Hazard Injection</div>
             <div class="toggle-row">
               <div class="toggle-txt">
-                <h4>Slippery Floor Hazard</h4>
-                <p>Causes wheels to spin out</p>
+                <h4>Rubble Slippage</h4>
+                <p>35% wheel friction loss</p>
               </div>
               <label class="switch">
                 <input type="checkbox" id="checkSlip">
@@ -753,8 +796,8 @@
 
             <div class="toggle-row">
               <div class="toggle-txt">
-                <h4>Lights Off (Darkness)</h4>
-                <p>Camera goes blind</p>
+                <h4>Dense Smoke Soot</h4>
+                <p>Visual camera blackout</p>
               </div>
               <label class="switch">
                 <input type="checkbox" id="checkBlackout">
@@ -765,7 +808,7 @@
 
           <!-- Simple Manual Drive (D-Pad) -->
           <div class="status-card">
-            <div class="status-card-title">Manual Drive (WASD / Arrows)</div>
+            <div class="status-card-title">Manual Teleoperation (WASD)</div>
             <div class="dpad-container">
               <div class="dpad-row">
                 <button class="dpad-btn" id="dpad-fwd">▲</button>
@@ -787,51 +830,37 @@
     </div>
 
     <!-- =======================================================================
-         HOW IT WORKS: 3 SIMPLE PICTURES (THE "AHA!" MOMENT)
+         HOW IT WORKS: 3 SIMPLE STEPS
          ======================================================================= -->
-    <h3 class="section-title">How It Works in 3 Simple Steps</h3>
-    <p class="section-sub">No complex math needed. Here is why combining 3 sensors solves the problem completely.</p>
+    <h3 class="section-title">How AEGIS-SAR Solves the Search & Rescue Challenge</h3>
+    <p class="section-sub">Combining Artificial Intelligence, multi-spectral sensing, and robust sensor fusion for disaster teams.</p>
 
     <div class="trio-grid">
       <div class="trio-card">
-        <span class="trio-emoji">🏎️</span>
-        <h3>1. The Wheels (Speed)</h3>
-        <p>Like human legs. They measure how fast the robot moves by counting tire turns.</p>
-        <div class="trio-badge">
-          <b>The Problem:</b> On smooth or dusty bunker floors, wheels slip. The robot thinks it is moving forward, but it's sliding!
-        </div>
-      </div>
-
-      <div class="trio-card">
-        <span class="trio-emoji">🧭</span>
-        <h3>2. The Gyroscope (Balance)</h3>
-        <p>Like our inner ears. It senses turns, spins, and tilts 100 times per second.</p>
-        <div class="trio-badge">
-          <b>The Superpower:</b> It <b>never slips</b>! Even if the wheels spin out on ice, the gyro knows the exact direction the robot is facing.
-        </div>
-      </div>
-
-      <div class="trio-card">
         <span class="trio-emoji">👁️</span>
-        <h3>3. The Camera (Vision)</h3>
-        <p>Like our eyes. It recognizes wall corners, doorways, and pillars to pinpoint exact location.</p>
+        <h3>1. OpenCV Object & Thermal Vision</h3>
+        <p>Uses computer vision algorithms (HOG, thermal blob segmentation, OpenCV DNN) to spot humans in rubble, measure body temperature (37°C), and estimate distance.</p>
         <div class="trio-badge">
-          <b>The Problem:</b> In unlit hallways or smoke, cameras go blind. When that happens, the robot leans on its gyro.
+          <b>The Problem:</b> Smoke and darkness make humans invisible to the naked eye. Multi-spectral infrared cuts through dust to spot living survivors.
         </div>
       </div>
-    </div>
 
-    <!-- The Secret Sauce (Brain) -->
-    <div class="fusion-box">
-      <div class="fusion-emoji">🧠</div>
-      <div class="fusion-text">
-        <h3>The Secret: "Sensor Fusion" (Extended Kalman Filter)</h3>
-        <p>
-          Instead of trusting one sensor, the robot runs a smart filter 20 times every second.
-          If the wheels start slipping on mud, the filter automatically ignores the wheels and trusts the gyro.
-          If the lights go out, it relies on balance until the camera spots a light again.
-          <b>Result: The robot never crashes.</b>
-        </p>
+      <div class="trio-card">
+        <span class="trio-emoji">🧠</span>
+        <h3>2. 15-State EKF Sensor Fusion</h3>
+        <p>Blends 50 Hz wheel encoders, 100 Hz 9-DoF IMU gyroscope, and RGB-D Visual SLAM into an Extended Kalman Filter to eliminate 84% of position drift.</p>
+        <div class="trio-badge">
+          <b>The Superpower:</b> When wheels slip on slick rubble, the IMU keeps the robot on course so it never gets lost in subterranean passages.
+        </div>
+      </div>
+
+      <div class="trio-card">
+        <span class="trio-emoji">🚑</span>
+        <h3>3. Real-Time Location Alerts & Routing</h3>
+        <p>When a survivor is confirmed, the system immediately tags their triage priority (Red/Yellow/Green), logs exact $(X, Y)$ grid coordinates, and calculates a safe extraction route.</p>
+        <div class="trio-badge">
+          <b>Real-World Impact:</b> Rescuers enter directly via the safest cleared corridor, drastically cutting response time during the critical "Golden Hour".
+        </div>
       </div>
     </div>
 
@@ -840,26 +869,26 @@
       <table class="simple-table">
         <thead>
           <tr>
-            <th>Situation</th>
-            <th>Without Our System (Normal Robots)</th>
-            <th>With Our System (Smart Fusion)</th>
+            <th>Disaster Condition</th>
+            <th>Standard Drone / UGV (No Fusion)</th>
+            <th>AEGIS-SAR (Our Autonomous Stack)</th>
           </tr>
         </thead>
         <tbody>
           <tr>
-            <td><b>Wheel Slip (Wet floor or mud)</b></td>
-            <td class="col-bad">❌ Drifts 3 to 4 meters off course & crashes into walls</td>
-            <td class="col-good">✅ Gyro instantly catches the slip; error stays under 0.3m</td>
+            <td><b>Collapsed Rubble & Slicks</b></td>
+            <td class="col-bad">❌ Wheel slip causes 3–4m drift; crashes into concrete</td>
+            <td class="col-good">✅ EKF detects slip; IMU bounds drift to &plusmn;0.38m</td>
           </tr>
           <tr>
-            <td><b>Pitch-Black Tunnel (No lights)</b></td>
-            <td class="col-bad">❌ Camera fails; robot gets permanently lost</td>
-            <td class="col-good">✅ Smoothly drives through using inertial gyro navigation</td>
+            <td><b>Heavy Smoke & Zero Visibility</b></td>
+            <td class="col-bad">❌ Optical camera fails; drone is stranded blind</td>
+            <td class="col-good">✅ Thermal IR isolates human heat signatures through smoke</td>
           </tr>
           <tr>
-            <td><b>60-Second Patrol Mission</b></td>
-            <td class="col-bad">❌ Cumulative drift builds up continuously</td>
-            <td class="col-good">✅ 84% reduction in drift; hits every checkpoint safely</td>
+            <td><b>Survivor Location & Triage</b></td>
+            <td class="col-bad">❌ Requires human pilot constantly watching video stream</td>
+            <td class="col-good">✅ Automated OpenCV detector tags victims & dispatches alerts</td>
           </tr>
         </tbody>
       </table>
@@ -870,24 +899,26 @@
   <!-- Footer -->
   <footer class="footer">
     <div class="container">
-      <p>Autonomous UGV: GPS-Denied Navigation Stack &bull; Simple & Future-Proof Architecture</p>
+      <p>AEGIS-SAR // AI-Powered Search and Rescue Robot &bull; ROS 2, OpenCV, Nav2 & EKF Sensor Fusion</p>
       <p style="margin-top:6px; color:#64748b; font-size:12px;">Zero dependencies. Tested to open cleanly in any web browser without installation.</p>
     </div>
   </footer>
 
   <!-- =======================================================================
-       SIMULATOR SCRIPT (LIGHTWEIGHT & CRISTAL CLEAR)
+       SIMULATOR SCRIPT (STANDALONE JAVASCRIPT ENGINE)
        ======================================================================= -->
   <script>
     const canvas = document.getElementById('mainCanvas');
     const ctx = canvas.getContext('2d');
+    const camCanvas = document.getElementById('cameraCanvas');
+    const camCtx = camCanvas.getContext('2d');
 
-    // Simple Bunker Layout (40x40m)
+    // Disaster Environment Layout (40x40m)
     const bunker = {
       walls: [
         [-20, -20, 20, -20], [20, -20, 20, 20], [20, 20, -20, 20], [-20, 20, -20, -20],
-        [-5, -0.25, 5, -0.25], [5, -0.25, 5, 0.25], [5, 0.25, -5, 0.25], [-5, 0.25, -5, -0.25], // Center wall
-        [11.2, 1.2, 12.8, 1.2], [12.8, 1.2, 12.8, 2.8], [12.8, 2.8, 11.2, 2.8], [11.2, 2.8, 11.2, 1.2], // Crate
+        [-5, -0.25, 5, -0.25], [5, -0.25, 5, 0.25], [5, 0.25, -5, 0.25], [-5, 0.25, -5, -0.25],
+        [11.2, 1.2, 12.8, 1.2], [12.8, 1.2, 12.8, 2.8], [12.8, 2.8, 11.2, 2.8], [11.2, 2.8, 11.2, 1.2],
         [-12.9, -4.7, -11.1, -4.7], [-11.1, -4.7, -11.1, -3.3], [-11.1, -3.3, -12.9, -3.3], [-12.9, -3.3, -12.9, -4.7]
       ],
       pillars: [
@@ -896,14 +927,30 @@
         { x: 8, y: -8, r: 0.6 },
         { x: -8, y: -8, r: 0.6 }
       ],
+      rubble: [
+        { x: -2.0, y: 4.0, r: 1.1 },
+        { x: 3.0, y: -5.0, r: 0.95 },
+        { x: -10.0, y: 0.0, r: 0.9 },
+        { x: 10.0, y: -4.0, r: 1.0 }
+      ],
+      hazards: [
+        { id: 'HAZ-01', name: 'Structural Fire', x: -3.0, y: -12.0, r: 2.2, temp: 420 },
+        { id: 'HAZ-02', name: 'Gas Pipe Flare', x: 11.0, y: 7.0, r: 1.8, temp: 340 }
+      ],
+      survivors: [
+        { id: 'SURV-101', name: 'Survivor Alpha', x: 6.5, y: 3.5, triage: 'RED', temp: 37.8, status: 'Trapped in rubble', discovered: false, rescued: false },
+        { id: 'SURV-102', name: 'Survivor Bravo', x: -8.5, y: 5.5, triage: 'YELLOW', temp: 36.9, status: 'Signaling for help', discovered: false, rescued: false },
+        { id: 'SURV-103', name: 'Survivor Charlie', x: -13.0, y: -7.0, triage: 'RED', temp: 36.2, status: 'Unconscious in void', discovered: false, rescued: false },
+        { id: 'SURV-104', name: 'Survivor Delta', x: 14.0, y: -12.0, triage: 'GREEN', temp: 37.1, status: 'Walking wounded', discovered: false, rescued: false }
+      ],
       darkZone: { x1: -15, y1: 1, x2: -4, y2: 7 },
       checkpoints: [
-        { id: 'Alpha', x: 5, y: 0 },
-        { id: 'Bravo', x: 8, y: 6 },
-        { id: 'Charlie', x: 0, y: 8 },
-        { id: 'Delta', x: -6, y: 2 },
-        { id: 'Echo', x: -10, y: -8 },
-        { id: 'Home', x: 0, y: 0 }
+        { id: 'Sector 1', x: 5, y: 0 },
+        { id: 'Sector 2', x: 8, y: 6 },
+        { id: 'Sector 3', x: 0, y: 8 },
+        { id: 'Sector 4', x: -6, y: 2 },
+        { id: 'Sector 5', x: -10, y: -8 },
+        { id: 'Base', x: 0, y: 0 }
       ]
     };
 
@@ -918,6 +965,7 @@
     let customTarget = null;
     let isManual = false;
     let manualDrive = { v: 0, omega: 0 };
+    let activeIngress = null;
 
     // Fault Toggles
     let slipFault = false;
@@ -946,6 +994,24 @@
       return a;
     }
 
+    // Audio Chime
+    let audioCtx = null;
+    function playAlarm() {
+      try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(1320, audioCtx.currentTime + 0.2);
+        gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.35);
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.start(); osc.stop(audioCtx.currentTime + 0.36);
+      } catch (e) {}
+    }
+
     // 20 Hz Simulation Loop
     function tick() {
       const dt = 0.05;
@@ -964,10 +1030,10 @@
         if (dist < 0.6) {
           if (customTarget) {
             customTarget = null;
-            updateStatus("Destination reached! Returning to patrol.", false);
+            updateStatus("Destination reached! Resuming SAR sweep.", false);
           } else {
             wpIdx = (wpIdx + 1) % bunker.checkpoints.length;
-            updateStatus(`Passed checkpoint ${target.id}! Moving to next.`, false);
+            updateStatus(`Sector cleared: ${target.id}. Advancing to next zone.`, false);
           }
         } else {
           let targetAngle = Math.atan2(dy, dx);
@@ -985,7 +1051,7 @@
       robot.gt.y += robot.gt.v * Math.sin(robot.gt.theta) * dt;
       robot.gt.theta = normAngle(robot.gt.theta + robot.gt.omega * dt);
 
-      // 1. Dumb Robot: Wheel Slippage simulation
+      // Dumb Robot: Wheel Slippage simulation
       let slipMultiplier = slipFault ? 0.60 : 0.97;
       let wheelV = robot.gt.v * slipMultiplier + (Math.random() - 0.5) * 0.04;
       let wheelOmega = robot.gt.omega * (slipFault ? 0.85 : 1.02) + (Math.random() - 0.5) * 0.03;
@@ -994,31 +1060,40 @@
       robot.odom.x += wheelV * Math.cos(robot.odom.theta) * dt;
       robot.odom.y += wheelV * Math.sin(robot.odom.theta) * dt;
 
-      // 2. Smart Robot: Extended Kalman Filter Fusion
+      // Smart Robot: EKF Fusion
       let inDarkZone = (robot.gt.x >= bunker.darkZone.x1 && robot.gt.x <= bunker.darkZone.x2 &&
                         robot.gt.y >= bunker.darkZone.y1 && robot.gt.y <= bunker.darkZone.y2);
       let cameraSees = !(inDarkZone || blackoutFault);
 
-      // Gyro measurement (always reliable)
       let gyroOmega = robot.gt.omega + (Math.random() - 0.5) * 0.02;
-
-      // EKF Heading updated using Gyro
       robot.ekf.theta = normAngle(robot.ekf.theta + gyroOmega * dt);
-
-      // EKF Position Prediction
       robot.ekf.x += wheelV * Math.cos(robot.ekf.theta) * dt;
       robot.ekf.y += wheelV * Math.sin(robot.ekf.theta) * dt;
 
-      // EKF Camera Correction (when camera sees)
       if (cameraSees) {
         let camX = robot.gt.x + (Math.random() - 0.5) * 0.05;
         let camY = robot.gt.y + (Math.random() - 0.5) * 0.05;
-        // Kalman Gain snaps it back
         robot.ekf.x += 0.3 * (camX - robot.ekf.x);
         robot.ekf.y += 0.3 * (camY - robot.ekf.y);
       }
 
-      // Record Trails
+      // Check survivor detection
+      bunker.survivors.forEach(s => {
+        let dist = Math.hypot(robot.gt.x - s.x, robot.gt.y - s.y);
+        let ang = Math.atan2(s.y - robot.gt.y, s.x - robot.gt.x);
+        let relAng = Math.abs(normAngle(ang - robot.gt.theta));
+
+        if (dist < 8.5 && relAng < 0.65) {
+          if (!s.discovered) {
+            s.discovered = true;
+            playAlarm();
+            showToast(`🚨 SURVIVOR LOCATED: ${s.name} at (${s.x.toFixed(1)}m, ${s.y.toFixed(1)}m) | TRIAGE ${s.triage} | Temp: ${s.temp}°C`);
+            updateMiniSurvList();
+          }
+        }
+      });
+
+      // Trails
       trails.gt.push([robot.gt.x, robot.gt.y]);
       trails.odom.push([robot.odom.x, robot.odom.y]);
       trails.ekf.push([robot.ekf.x, robot.ekf.y]);
@@ -1026,20 +1101,19 @@
         trails.gt.shift(); trails.odom.shift(); trails.ekf.shift();
       }
 
-      // Update UI readings
+      // Error readings
       let ekfErr = Math.hypot(robot.gt.x - robot.ekf.x, robot.gt.y - robot.ekf.y);
       let odomErr = Math.hypot(robot.gt.x - robot.odom.x, robot.gt.y - robot.odom.y);
 
       document.getElementById('txtEkfErr').innerText = `${ekfErr.toFixed(2)} m (Safe)`;
       document.getElementById('txtOdomErr').innerText = `${odomErr.toFixed(2)} m (Drifting!)`;
-
       document.getElementById('barEkf').style.width = `${Math.min(100, Math.max(10, (ekfErr / 4) * 100))}%`;
       document.getElementById('barOdom').style.width = `${Math.min(100, Math.max(10, (odomErr / 4) * 100))}%`;
 
       if (slipFault) {
-        updateStatus("⚠️ Alert: Floor is slippery! Dumb robot is veering off; smart robot is correcting itself.", true);
+        updateStatus("⚠️ Alert: Rubble is slippery! Raw odometry is veering off; EKF gyro is stabilizing course.", true);
       } else if (inDarkZone || blackoutFault) {
-        updateStatus("🌑 In Darkness: Camera blinded! Robot is navigating safely using internal balance.", true);
+        updateStatus("🌑 In Smoke Blackout: Optical camera blind! Robot is navigating safely using internal balance.", true);
       }
     }
     setInterval(tick, 50);
@@ -1048,11 +1122,61 @@
       const banner = document.getElementById('statusBanner');
       const txt = document.getElementById('statusText');
       txt.innerText = text;
-      if (isAlert) {
-        banner.className = "status-banner alert";
-      } else {
-        banner.className = "status-banner";
+      banner.className = isAlert ? "status-banner alert" : "status-banner";
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('alertToast');
+      document.getElementById('toastMsg').innerText = msg;
+      toast.style.display = 'flex';
+    }
+    function dismissToast() {
+      document.getElementById('alertToast').style.display = 'none';
+    }
+
+    function dispatchMiniRescue(id) {
+      let surv = bunker.survivors.find(s => s.id === id);
+      if (surv) {
+        activeIngress = [{ x: 0, y: 0 }, { x: surv.x, y: surv.y }];
+        showToast(`🚑 USAR Team Dispatched to ${surv.name}! Ingress route planned.`);
       }
+    }
+
+    function markMiniRescued(id) {
+      let surv = bunker.survivors.find(s => s.id === id);
+      if (surv) {
+        surv.rescued = true;
+        updateMiniSurvList();
+      }
+    }
+
+    function updateMiniSurvList() {
+      const container = document.getElementById('miniSurvList');
+      container.innerHTML = '';
+      let redCount = 0;
+
+      bunker.survivors.forEach(s => {
+        if (!s.rescued && s.triage === 'RED' && s.discovered) redCount++;
+        const div = document.createElement('div');
+        let clrClass = s.triage === 'RED' ? 'red' : (s.triage === 'YELLOW' ? 'yellow' : 'green');
+        if (s.rescued) clrClass = 'rescued';
+
+        div.className = `mini-surv-item ${clrClass}`;
+        div.innerHTML = `
+          <div>
+            <b>${s.name}</b>
+            <div style="font-size:9px; color:var(--text-muted);">${s.rescued ? '✓ Safely Evacuated' : (s.discovered ? `📍 (${s.x.toFixed(1)}, ${s.y.toFixed(1)}) &bull; ${s.triage}` : 'Search in progress')}</div>
+          </div>
+          <div>
+            ${!s.rescued ? `
+              <button class="btn-mini-action" onclick="dispatchMiniRescue('${s.id}')">USAR</button>
+              <button class="btn-mini-action" style="background:#10b981; color:#fff;" onclick="markMiniRescued('${s.id}')">✓</button>
+            ` : '<span style="color:var(--cyan); font-size:10px;">RESCUED</span>'}
+          </div>
+        `;
+        container.appendChild(div);
+      });
+      document.getElementById('triageCountTxt').innerText = `${redCount} Immediate`;
     }
 
     // 60 FPS Canvas Drawing
@@ -1069,7 +1193,14 @@
         ctx.beginPath(); ctx.moveTo(p3.x, p3.y); ctx.lineTo(p4.x, p4.y); ctx.stroke();
       }
 
-      // 2. Dark/IR Jamming Zone
+      // Base Staging
+      let baseSc = w2s(0, 0);
+      ctx.strokeStyle = 'rgba(6, 182, 212, 0.4)';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.arc(baseSc.x, baseSc.y, 14, 0, Math.PI * 2); ctx.stroke();
+      ctx.fillStyle = '#38bdf8'; ctx.font = '10px sans-serif'; ctx.fillText('BASE STAGING', baseSc.x + 16, baseSc.y + 4);
+
+      // 2. Smoke / Dark Zone
       let dz1 = w2s(bunker.darkZone.x1, bunker.darkZone.y2);
       let dz2 = w2s(bunker.darkZone.x2, bunker.darkZone.y1);
       ctx.fillStyle = 'rgba(239, 68, 68, 0.08)';
@@ -1079,9 +1210,7 @@
       ctx.fillRect(dz1.x, dz1.y, dz2.x - dz1.x, dz2.y - dz1.y);
       ctx.strokeRect(dz1.x, dz1.y, dz2.x - dz1.x, dz2.y - dz1.y);
       ctx.setLineDash([]);
-      ctx.fillStyle = '#f87171';
-      ctx.font = '10px sans-serif';
-      ctx.fillText('🌑 UNLIT / DARK CORRIDOR', dz1.x + 8, dz1.y + 16);
+      ctx.fillStyle = '#f87171'; ctx.font = '10px sans-serif'; ctx.fillText('⚠ SMOKE & COLLAPSE ZONE', dz1.x + 8, dz1.y + 16);
 
       // 3. Walls
       ctx.strokeStyle = '#38bdf8';
@@ -1092,101 +1221,182 @@
       });
 
       // 4. Pillars
-      bunker.pillars.forEach((p, i) => {
+      bunker.pillars.forEach(p => {
         let sc = w2s(p.x, p.y);
-        ctx.fillStyle = '#1e293b';
-        ctx.strokeStyle = '#06b6d4';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.arc(sc.x, sc.y, p.r * scale, 0, Math.PI * 2);
-        ctx.fill(); ctx.stroke();
+        ctx.fillStyle = '#1e293b'; ctx.strokeStyle = '#06b6d4'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(sc.x, sc.y, p.r * scale, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
       });
 
-      // 5. Checkpoints
+      // 5. Rubble Piles
+      bunker.rubble.forEach(r => {
+        let sc = w2s(r.x, r.y);
+        ctx.fillStyle = 'rgba(100, 116, 139, 0.75)'; ctx.strokeStyle = '#cbd5e1'; ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.arc(sc.x, sc.y, r.r * scale, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = '#e2e8f0'; ctx.font = '8px sans-serif'; ctx.fillText('RUBBLE', sc.x - 14, sc.y + 3);
+      });
+
+      // 6. Fire Hazards
+      const t = Date.now() * 0.003;
+      bunker.hazards.forEach(h => {
+        let sc = w2s(h.x, h.y);
+        let pulse = Math.sin(t + h.x) * 3;
+        let r = h.r * scale + pulse;
+        let grad = ctx.createRadialGradient(sc.x, sc.y, 2, sc.x, sc.y, r);
+        grad.addColorStop(0, 'rgba(255, 200, 0, 0.85)');
+        grad.addColorStop(0.5, 'rgba(239, 68, 68, 0.55)');
+        grad.addColorStop(1, 'rgba(185, 28, 28, 0.05)');
+        ctx.fillStyle = grad;
+        ctx.beginPath(); ctx.arc(sc.x, sc.y, r, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#ffedd5'; ctx.font = '9px sans-serif'; ctx.fillText(`🔥 ${h.temp}°C`, sc.x - 16, sc.y - r - 2);
+      });
+
+      // 7. Survivors on Map
+      bunker.survivors.forEach(s => {
+        let sc = w2s(s.x, s.y);
+        let color = s.triage === 'RED' ? '#ef4444' : (s.triage === 'YELLOW' ? '#f59e0b' : '#10b981');
+        if (s.rescued) color = '#06b6d4';
+
+        ctx.strokeStyle = color; ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.arc(sc.x, sc.y, 10 + Math.sin(t*2 + s.x)*2, 0, Math.PI * 2); ctx.stroke();
+        ctx.fillStyle = color;
+        ctx.beginPath(); ctx.arc(sc.x, sc.y, 4, 0, Math.PI * 2); ctx.fill();
+
+        ctx.fillStyle = '#fff'; ctx.font = '9px sans-serif';
+        ctx.fillText(s.rescued ? `✓ ${s.name}` : `${s.id} (${s.triage})`, sc.x + 12, sc.y + 3);
+      });
+
+      // 8. Rescuer Ingress Route
+      if (activeIngress) {
+        ctx.strokeStyle = '#38bdf8'; ctx.lineWidth = 2.5; ctx.setLineDash([6, 4]);
+        ctx.beginPath();
+        let p1 = w2s(activeIngress[0].x, activeIngress[0].y);
+        let p2 = w2s(activeIngress[1].x, activeIngress[1].y);
+        ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.stroke();
+        ctx.setLineDash([]);
+      }
+
+      // 9. Checkpoints
       bunker.checkpoints.forEach((wp, i) => {
         let sc = w2s(wp.x, wp.y);
         ctx.fillStyle = (i === wpIdx && !customTarget) ? '#06b6d4' : '#a855f7';
-        ctx.beginPath(); ctx.arc(sc.x, sc.y, 6, 0, Math.PI * 2); ctx.fill();
-        ctx.fillStyle = '#cbd5e1';
-        ctx.font = '11px sans-serif';
-        ctx.fillText(wp.id, sc.x + 8, sc.y + 4);
+        ctx.beginPath(); ctx.arc(sc.x, sc.y, 5, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#cbd5e1'; ctx.font = '10px sans-serif'; ctx.fillText(wp.id, sc.x + 7, sc.y + 3);
       });
 
-      // Custom target reticle
-      if (customTarget) {
-        let sc = w2s(customTarget.x, customTarget.y);
-        ctx.strokeStyle = '#f59e0b';
-        ctx.lineWidth = 2;
-        ctx.beginPath(); ctx.arc(sc.x, sc.y, 8, 0, Math.PI * 2); ctx.stroke();
-      }
+      // 10. Camera FOV Cone
+      let gtSc = w2s(robot.gt.x, robot.gt.y);
+      let fov = 1.25;
+      let range = 6.0 * scale;
+      ctx.save();
+      ctx.fillStyle = 'rgba(6, 182, 212, 0.08)'; ctx.strokeStyle = 'rgba(6, 182, 212, 0.3)';
+      ctx.beginPath();
+      ctx.moveTo(gtSc.x, gtSc.y);
+      ctx.arc(gtSc.x, gtSc.y, range, -robot.gt.theta - fov/2, -robot.gt.theta + fov/2);
+      ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.restore();
 
-      // 6. Trails:
-      // Red = Dumb Robot (drifting)
+      // 11. Trails: Red = Dumb (Drifting), Cyan = Smart EKF, Green = GT
       drawTrail(trails.odom, '#ef4444', 1.8, [5, 3]);
-      // Cyan = Smart Robot (our system)
       drawTrail(trails.ekf, '#06b6d4', 2.2, []);
-      // Green = True Path
       drawTrail(trails.gt, '#10b981', 1.5, []);
 
-      // 7. Dumb Robot Ghost Icon
+      // 12. Ghost Odometry Robot
       let odomSc = w2s(robot.odom.x, robot.odom.y);
       ctx.save();
       ctx.translate(odomSc.x, odomSc.y);
       ctx.rotate(-robot.odom.theta);
       ctx.strokeStyle = 'rgba(239, 68, 68, 0.7)';
-      ctx.lineWidth = 1.5;
-      ctx.setLineDash([3, 2]);
+      ctx.lineWidth = 1.5; ctx.setLineDash([3, 2]);
       ctx.strokeRect(-6, -4, 12, 8);
       ctx.restore();
 
-      // 8. Smart Robot Chassis (Ground Truth)
-      let gtSc = w2s(robot.gt.x, robot.gt.y);
+      // 13. Smart Robot Chassis
       ctx.save();
       ctx.translate(gtSc.x, gtSc.y);
       ctx.rotate(-robot.gt.theta);
-      
-      // Wheels
       ctx.fillStyle = '#0f172a';
-      ctx.fillRect(-6, -7, 6, 3);
-      ctx.fillRect(-6, 4, 6, 3);
-
-      // Body
-      ctx.fillStyle = '#10b981';
-      ctx.strokeStyle = '#34d399';
-      ctx.lineWidth = 2;
-      ctx.fillRect(-8, -5, 16, 10);
-      ctx.strokeRect(-8, -5, 16, 10);
-
-      // Eye / Turret
+      ctx.fillRect(-6, -7, 6, 3); ctx.fillRect(-6, 4, 6, 3);
+      ctx.fillStyle = '#10b981'; ctx.strokeStyle = '#34d399'; ctx.lineWidth = 2;
+      ctx.fillRect(-8, -5, 16, 10); ctx.strokeRect(-8, -5, 16, 10);
       ctx.fillStyle = '#38bdf8';
       ctx.beginPath(); ctx.arc(0, 0, 3, 0, Math.PI * 2); ctx.fill();
-
-      // Heading Arrow
       ctx.strokeStyle = '#fff';
       ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(12, 0); ctx.stroke();
       ctx.restore();
+
+      // 14. Render Synthetic AI Camera POV Viewport
+      drawCameraView();
 
       requestAnimationFrame(draw);
     }
     requestAnimationFrame(draw);
 
+    function drawCameraView() {
+      const cw = camCanvas.width, ch = camCanvas.height;
+      camCtx.fillStyle = '#050914'; camCtx.fillRect(0, 0, cw, ch);
+
+      // Floor & Ceiling
+      camCtx.fillStyle = '#101726'; camCtx.fillRect(0, ch/2, cw, ch/2);
+      camCtx.strokeStyle = 'rgba(56, 189, 248, 0.15)';
+      camCtx.beginPath(); camCtx.moveTo(0, ch/2); camCtx.lineTo(cw, ch/2); camCtx.stroke();
+
+      let targetDetected = null;
+      let minTargetDist = 12.0;
+
+      bunker.survivors.forEach(s => {
+        let dx = s.x - robot.gt.x, dy = s.y - robot.gt.y;
+        let dist = Math.hypot(dx, dy);
+        let ang = Math.atan2(dy, dx);
+        let relAng = normAngle(ang - robot.gt.theta);
+
+        if (dist > 0.5 && dist < 12.0 && Math.abs(relAng) < 0.6) {
+          let sx = cw/2 + (relAng / 0.6) * (cw/2);
+          let h = Math.min(ch * 0.85, (ch * 1.5) / dist);
+          let w = h * 0.45;
+          let sy = ch/2 + (ch * 0.3) / dist;
+
+          // Draw Human Figure
+          let col = s.triage === 'RED' ? '#ef4444' : (s.triage === 'YELLOW' ? '#f59e0b' : '#10b981');
+          camCtx.fillStyle = col;
+          camCtx.beginPath(); camCtx.arc(sx, sy - h, w/4, 0, Math.PI * 2); camCtx.fill();
+          camCtx.fillRect(sx - w/3, sy - h + w/4, w*0.66, h*0.5);
+
+          // OpenCV Bounding Box
+          camCtx.strokeStyle = col; camCtx.lineWidth = 1.5;
+          camCtx.strokeRect(sx - w/2, sy - h - w/4, w, h + w/4);
+          camCtx.fillStyle = '#fff'; camCtx.font = '8px sans-serif';
+          camCtx.fillText(`HUMAN 94% | ${dist.toFixed(1)}m`, sx - w/2, sy - h - w/4 - 3);
+
+          if (dist < minTargetDist) {
+            minTargetDist = dist;
+            targetDetected = s;
+          }
+        }
+      });
+
+      if (targetDetected) {
+        document.getElementById('camTargetTxt').innerText = `Target: ${targetDetected.name} (${targetDetected.triage})`;
+        document.getElementById('camRangeTxt').innerText = `Range: ${minTargetDist.toFixed(1)} m`;
+      } else {
+        document.getElementById('camTargetTxt').innerText = 'Scanning sector...';
+        document.getElementById('camRangeTxt').innerText = 'Range: -- m';
+      }
+    }
+
     function drawTrail(pts, color, width, dash) {
       if (pts.length < 2) return;
       ctx.save();
-      ctx.strokeStyle = color;
-      ctx.lineWidth = width;
-      ctx.setLineDash(dash);
+      ctx.strokeStyle = color; ctx.lineWidth = width; ctx.setLineDash(dash);
       ctx.beginPath();
       pts.forEach((p, i) => {
         let sc = w2s(p[0], p[1]);
         if (i === 0) ctx.moveTo(sc.x, sc.y);
         else ctx.lineTo(sc.x, sc.y);
       });
-      ctx.stroke();
-      ctx.restore();
+      ctx.stroke(); ctx.restore();
     }
 
-    // Click to send robot
+    // Canvas click to command
     canvas.addEventListener('click', (e) => {
       let rect = canvas.getBoundingClientRect();
       let sx = e.clientX - rect.left;
@@ -1204,15 +1414,9 @@
     const checkSlip = document.getElementById('checkSlip');
     const checkBlackout = document.getElementById('checkBlackout');
 
-    btnNormal.addEventListener('click', () => {
-      setPreset(false, false, btnNormal);
-    });
-    btnSlip.addEventListener('click', () => {
-      setPreset(true, false, btnSlip);
-    });
-    btnBlackout.addEventListener('click', () => {
-      setPreset(false, true, btnBlackout);
-    });
+    btnNormal.addEventListener('click', () => setPreset(false, false, btnNormal));
+    btnSlip.addEventListener('click', () => setPreset(true, false, btnSlip));
+    btnBlackout.addEventListener('click', () => setPreset(false, true, btnBlackout));
 
     function setPreset(slip, blackout, activeBtn) {
       slipFault = slip; checkSlip.checked = slip;
@@ -1245,8 +1449,7 @@
     bindDpad('dpad-left', 0.2, 1.2);
     bindDpad('dpad-right', 0.2, -1.2);
     document.getElementById('dpad-stop').addEventListener('click', () => {
-      isManual = false;
-      manualDrive = { v: 0, omega: 0 };
+      isManual = false; manualDrive = { v: 0, omega: 0 };
     });
 
     // Keyboard Drive
@@ -1263,34 +1466,13 @@
       }
     });
 
-    // =========================================================================
-    // 100% Offline PWA Service Worker Registration & Installation
-    // =========================================================================
+    // Initial render of survivor manifest
+    updateMiniSurvList();
+
+    // Offline Service Worker
     if ('serviceWorker' in navigator && (window.location.protocol.startsWith('http') || window.location.protocol.startsWith('https'))) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js')
-          .then((reg) => console.log('[Offline Engine] Service Worker registered:', reg.scope))
-          .catch((err) => console.log('[Offline Engine] Service Worker registration note:', err));
-      });
-    }
-
-    let deferredInstallPrompt;
-    const btnInstall = document.getElementById('btnInstallApp');
-    window.addEventListener('beforeinstallprompt', (e) => {
-      e.preventDefault();
-      deferredInstallPrompt = e;
-      if (btnInstall) btnInstall.style.display = 'inline-flex';
-    });
-    if (btnInstall) {
-      btnInstall.addEventListener('click', async () => {
-        if (deferredInstallPrompt) {
-          deferredInstallPrompt.prompt();
-          const { outcome } = await deferredInstallPrompt.userChoice;
-          if (outcome === 'accepted') {
-            btnInstall.style.display = 'none';
-          }
-          deferredInstallPrompt = null;
-        }
+        navigator.serviceWorker.register('./sw.js').catch(() => {});
       });
     }
   </script>

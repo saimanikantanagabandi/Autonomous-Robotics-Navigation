@@ -819,3 +819,457 @@ input:checked + .slider {
 input:checked + .slider:before {
   transform: translateX(18px);
 }
+
+/* ==========================================================================
+   Search & Rescue Extensions: Emergency Alert Banner, Camera HUD & Triage
+   ========================================================================== */
+.emergency-alert-banner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(90deg, #991b1b 0%, #dc2626 50%, #7f1d1d 100%);
+  color: #ffffff;
+  padding: 10px 24px;
+  z-index: 1000;
+  box-shadow: 0 4px 25px rgba(220, 38, 38, 0.6);
+  border-bottom: 2px solid #fecaca;
+  animation: slideDown 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideDown {
+  from { transform: translateY(-100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.alert-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.alert-siren {
+  font-size: 26px;
+  animation: pulse 1s infinite alternate;
+}
+
+.alert-text-block {
+  flex: 1;
+}
+
+.alert-headline {
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.alert-sub {
+  font-size: 11px;
+  opacity: 0.92;
+  margin-top: 2px;
+}
+
+.alert-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-alert-dispatch {
+  background: #ffffff;
+  color: #991b1b;
+  border: none;
+  font-family: var(--font-mono);
+  font-weight: 800;
+  font-size: 11px;
+  padding: 6px 14px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: .2s;
+}
+
+.btn-alert-dispatch:hover {
+  background: #fecaca;
+}
+
+.btn-alert-dismiss {
+  background: rgba(0, 0, 0, 0.35);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+/* Audio Toggle Button in Header */
+.audio-toggle-btn {
+  background: rgba(15, 23, 42, 0.8);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 5px 10px;
+  border-radius: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: .2s;
+}
+
+.audio-toggle-btn:hover {
+  border-color: var(--color-cyan);
+  color: #fff;
+}
+
+.badge-triage {
+  background: rgba(220, 38, 38, 0.18);
+  color: #fca5a5;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+}
+
+.pulse-red {
+  background: #ef4444;
+  box-shadow: 0 0 8px #ef4444;
+}
+
+/* AI Camera Card & Video Viewport */
+.camera-card {
+  border-color: rgba(6, 182, 212, 0.35);
+}
+
+.camera-body {
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.camera-viewport-box {
+  width: 100%;
+  aspect-ratio: 360 / 240;
+  background: #020408;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.camera-stream {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  image-rendering: pixelated;
+}
+
+.camera-overlay-stats {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: flex;
+  gap: 6px;
+  z-index: 10;
+}
+
+.stat-pill {
+  background: rgba(5, 10, 20, 0.75);
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 9px;
+  font-weight: 600;
+}
+
+/* Vision Mode Bar */
+.vision-mode-bar {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+}
+
+.btn-vision-mode {
+  background: rgba(15, 23, 42, 0.8);
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  padding: 4px 2px;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: .15s;
+}
+
+.btn-vision-mode:hover {
+  color: #fff;
+  border-color: var(--border-accent);
+}
+
+.btn-vision-mode.active {
+  background: var(--color-cyan);
+  color: #041017;
+  border-color: var(--color-cyan);
+  font-weight: 800;
+  box-shadow: 0 0 8px var(--color-cyan-glow);
+}
+
+/* Active Detection Mini Box */
+.detection-telemetry-box {
+  background: rgba(10, 16, 28, 0.85);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  padding: 6px 10px;
+}
+
+.det-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  font-weight: 700;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 4px;
+  margin-bottom: 4px;
+}
+
+.det-grid-mini {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  font-size: 9px;
+}
+
+.lbl-dim {
+  color: var(--text-muted);
+}
+
+.highlight-orange {
+  color: #fb923c;
+  font-weight: 700;
+}
+
+/* Survivor Triage Card & Manifest */
+.triage-card {
+  border-color: rgba(239, 68, 68, 0.35);
+}
+
+.triage-stats-bar {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+  margin-bottom: 10px;
+}
+
+.triage-stat-item {
+  text-align: center;
+  padding: 4px;
+  border-radius: 4px;
+  font-size: 9px;
+  font-weight: 700;
+  border: 1px solid transparent;
+}
+
+.t-count {
+  display: block;
+  font-size: 14px;
+  font-weight: 900;
+  font-family: var(--font-display);
+}
+
+.red-stat {
+  background: rgba(239, 68, 68, 0.12);
+  color: #f87171;
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.yellow-stat {
+  background: rgba(245, 158, 11, 0.12);
+  color: #fbbf24;
+  border-color: rgba(245, 158, 11, 0.3);
+}
+
+.green-stat {
+  background: rgba(16, 185, 129, 0.12);
+  color: #34d399;
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+.blue-stat {
+  background: rgba(6, 182, 212, 0.12);
+  color: #38bdf8;
+  border-color: rgba(6, 182, 212, 0.3);
+}
+
+.survivor-cards-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 250px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.survivor-card {
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  transition: .2s;
+}
+
+.survivor-card.discovered {
+  border-color: rgba(6, 182, 212, 0.45);
+}
+
+.survivor-card.critical {
+  border-left: 3px solid var(--color-red);
+}
+
+.survivor-card.delayed {
+  border-left: 3px solid var(--color-amber);
+}
+
+.survivor-card.minor {
+  border-left: 3px solid var(--color-green);
+}
+
+.survivor-card.rescued {
+  border-left: 3px solid var(--color-cyan);
+  opacity: 0.65;
+}
+
+.surv-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.surv-name {
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.surv-badge {
+  font-size: 8px;
+  font-weight: 800;
+  padding: 2px 5px;
+  border-radius: 3px;
+  text-transform: uppercase;
+}
+
+.badge-red { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid #ef4444; }
+.badge-yellow { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid #f59e0b; }
+.badge-green { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid #10b981; }
+.badge-blue { background: rgba(6, 182, 212, 0.2); color: #38bdf8; border: 1px solid #06b6d4; }
+
+.surv-sub {
+  font-size: 9px;
+  color: var(--text-muted);
+}
+
+.surv-vitals-row {
+  display: flex;
+  gap: 10px;
+  font-size: 9px;
+  background: rgba(0, 0, 0, 0.25);
+  padding: 3px 6px;
+  border-radius: 3px;
+}
+
+.surv-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.btn-card-action {
+  flex: 1;
+  background: rgba(30, 41, 59, 0.8);
+  border: 1px solid var(--border-color);
+  color: #fff;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 600;
+  padding: 4px;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: .15s;
+}
+
+.btn-card-action:hover {
+  background: var(--color-cyan);
+  color: #041017;
+  border-color: var(--color-cyan);
+}
+
+.btn-card-rescued {
+  background: rgba(16, 185, 129, 0.15);
+  border-color: rgba(16, 185, 129, 0.4);
+  color: #34d399;
+}
+
+.btn-card-rescued:hover {
+  background: var(--color-green);
+  color: #fff;
+}
+
+/* Disaster Triggers */
+.disaster-btn-group {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.btn-disaster {
+  background: rgba(127, 29, 29, 0.35);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  color: #fca5a5;
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+  font-weight: 700;
+  padding: 5px 2px;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: .2s;
+}
+
+.btn-disaster:hover {
+  background: var(--color-red);
+  color: #fff;
+}
+
+.leg-fire {
+  background: #f97316;
+  box-shadow: 0 0 6px #f97316;
+}
+
+.btn-info {
+  background: rgba(6, 182, 212, 0.15);
+  border: 1px solid rgba(6, 182, 212, 0.5);
+  color: #38bdf8;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  padding: 8px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.btn-info:hover {
+  background: var(--color-cyan);
+  color: #041017;
+}

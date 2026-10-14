@@ -55,23 +55,125 @@ class BunkerMap:
             (-8.0, -8.0, 0.6),
         ]
 
-        # Tactical Checkpoints (matching ROS 2 patrol mission)
-        self.default_checkpoints = [
-            {"id": "Alpha", "name": "Alpha Checkpoint (Perimeter Ingress)", "x": 5.0, "y": 0.0, "yaw": 0.0},
-            {"id": "Bravo", "name": "Bravo Checkpoint (North Corridor)", "x": 8.0, "y": 6.0, "yaw": 1.57},
-            {"id": "Charlie", "name": "Charlie Checkpoint (Storage Vault)", "x": 0.0, "y": 8.0, "yaw": 3.14},
-            {"id": "Delta", "name": "Delta Checkpoint (West Flank)", "x": -6.0, "y": 2.0, "yaw": -1.57},
-            {"id": "Echo", "name": "Echo Checkpoint (South Armory)", "x": -10.0, "y": -8.0, "yaw": -0.78},
-            {"id": "Base", "name": "Base Station (Extraction Point)", "x": 0.0, "y": 0.0, "yaw": 0.0},
+        # Disaster Rubble & Collapsed Obstacles: (center_x, center_y, radius)
+        self.rubble_piles: List[Tuple[float, float, float]] = [
+            (-2.0, 4.0, 1.1),
+            (3.0, -5.0, 0.95),
+            (-10.0, 0.0, 0.9),
+            (10.0, -4.0, 1.0),
         ]
 
-        # Optical Feature Dropout Zone (Unlit bunker corridor: triggers visual blackout)
+        # Active Fire / Thermal Hotspots in Disaster Environment
+        self.hazards = [
+            {"id": "HAZ-01", "type": "STRUCTURAL_FIRE", "name": "Active Fire & Flammable Debris", "x": -3.0, "y": -12.0, "radius": 2.2, "temp_c": 420.0},
+            {"id": "HAZ-02", "type": "GAS_FLARE", "name": "Ruptured Gas Pipe Hotspot", "x": 11.0, "y": 7.0, "radius": 1.8, "temp_c": 340.0},
+            {"id": "HAZ-03", "type": "COLLAPSE_RISK", "name": "Unstable Ceiling Slab Danger Zone", "x": -9.0, "y": 3.0, "radius": 2.5, "temp_c": 22.0},
+        ]
+
+        # Simulated Disaster Survivors / Victims in Need of Extraction
+        self.survivors = [
+            {
+                "id": "SURV-101",
+                "name": "Survivor Alpha (Trapped Worker)",
+                "x": 6.5,
+                "y": 3.5,
+                "z": 0.0,
+                "triage": "RED",
+                "triage_name": "Immediate / Critical",
+                "status": "Trapped under concrete beam",
+                "temp_c": 37.8,
+                "heart_rate_bpm": 114,
+                "vitals_summary": "Weak consciousness, shallow respiration, high stress",
+                "sound_detected": True,
+                "sound_db": 74.0,
+                "co2_ppm": 850,
+                "discovered": False,
+                "alert_dispatched": False,
+                "rescued": False,
+                "confidence": 0.0,
+                "discovery_time": None
+            },
+            {
+                "id": "SURV-102",
+                "name": "Survivor Bravo (Signaling Civilian)",
+                "x": -8.5,
+                "y": 5.5,
+                "z": 0.0,
+                "triage": "YELLOW",
+                "triage_name": "Delayed / Trapped",
+                "status": "Conscious & waving flashlight",
+                "temp_c": 36.9,
+                "heart_rate_bpm": 92,
+                "vitals_summary": "Conscious, signaling for rescue, lower extremity pinned",
+                "sound_detected": True,
+                "sound_db": 82.0,
+                "co2_ppm": 920,
+                "discovered": False,
+                "alert_dispatched": False,
+                "rescued": False,
+                "confidence": 0.0,
+                "discovery_time": None
+            },
+            {
+                "id": "SURV-103",
+                "name": "Survivor Charlie (Structural Void)",
+                "x": -13.0,
+                "y": -7.0,
+                "z": 0.0,
+                "triage": "RED",
+                "triage_name": "Immediate / Critical",
+                "status": "Unresponsive in sub-level void",
+                "temp_c": 36.2,
+                "heart_rate_bpm": 52,
+                "vitals_summary": "Unconscious, bradycardia, severe crush risk",
+                "sound_detected": False,
+                "sound_db": 35.0,
+                "co2_ppm": 710,
+                "discovered": False,
+                "alert_dispatched": False,
+                "rescued": False,
+                "confidence": 0.0,
+                "discovery_time": None
+            },
+            {
+                "id": "SURV-104",
+                "name": "Survivor Delta (Ambulatory Survivor)",
+                "x": 14.0,
+                "y": -12.0,
+                "z": 0.0,
+                "triage": "GREEN",
+                "triage_name": "Minor / Ambulatory",
+                "status": "Walking wounded, signaling from clear zone",
+                "temp_c": 37.1,
+                "heart_rate_bpm": 96,
+                "vitals_summary": "Alert, oriented, minor abrasions, able to move",
+                "sound_detected": True,
+                "sound_db": 79.0,
+                "co2_ppm": 880,
+                "discovered": False,
+                "alert_dispatched": False,
+                "rescued": False,
+                "confidence": 0.0,
+                "discovery_time": None
+            }
+        ]
+
+        # Tactical Checkpoints (matching ROS 2 Search & Rescue sweep pattern)
+        self.default_checkpoints = [
+            {"id": "Alpha", "name": "Sector 1: East Ingress & Rubble", "x": 6.0, "y": 3.0, "yaw": 0.0},
+            {"id": "Bravo", "name": "Sector 2: North Collapse Corridor", "x": -7.0, "y": 6.0, "yaw": 1.57},
+            {"id": "Charlie", "name": "Sector 3: West Void Space", "x": -13.0, "y": -9.0, "yaw": 3.14},
+            {"id": "Delta", "name": "Sector 4: South Recovery Area", "x": 12.0, "y": -8.0, "yaw": -1.57},
+            {"id": "Base", "name": "Base Station: Triage Staging", "x": 0.0, "y": -3.0, "yaw": 0.0},
+        ]
+
+        # Optical Feature Dropout Zone (Unlit bunker corridor / dense smoke zone)
         self.dropout_zone = {
             "x_min": -15.0,
             "x_max": -4.0,
             "y_min": 1.0,
             "y_max": 7.0,
-            "name": "Blackout Zone (Low Feature Density / IR Jamming)"
+            "name": "Heavy Smoke & Rubble Zone (Zero Visibility / Visual SLAM Dropout)"
         }
 
         # Grid resolution for A* path planner
@@ -106,6 +208,11 @@ class BunkerMap:
         # Pillars
         for px, py, pr in self.pillars:
             if math.hypot(x - px, y - py) <= (pr + margin):
+                return True
+
+        # Disaster Rubble Piles
+        for rx_c, ry_c, rr in getattr(self, "rubble_piles", []):
+            if math.hypot(x - rx_c, y - ry_c) <= (rr + margin):
                 return True
 
         return False
@@ -226,7 +333,36 @@ class BunkerMap:
                 hit_x = rx + dx * d
                 hit_y = ry + dy * d
 
+        # Ray-circle intersections for disaster rubble piles
+        for rx_c, ry_c, rr in getattr(self, "rubble_piles", []):
+            d = self._ray_circle_intersect(rx, ry, dx, dy, rx_c, ry_c, rr)
+            if d is not None and 0.0 < d < min_dist:
+                min_dist = d
+                hit_x = rx + dx * d
+                hit_y = ry + dy * d
+
         return min_dist, hit_x, hit_y
+
+    def get_survivors(self) -> List[Dict]:
+        """Returns all simulated victims/survivors."""
+        return self.survivors
+
+    def get_hazards(self) -> List[Dict]:
+        """Returns active disaster fire/gas/collapse hazards."""
+        return self.hazards
+
+    def get_hazard_proximity(self, x: float, y: float) -> Optional[Dict]:
+        """Checks if robot or rescuer is dangerously close to a hazard."""
+        for haz in self.hazards:
+            dist = math.hypot(x - haz["x"], y - haz["y"])
+            if dist <= haz["radius"] + 1.0:
+                return {
+                    "hazard": haz["name"],
+                    "type": haz["type"],
+                    "temp_c": haz.get("temp_c", 20.0),
+                    "dist": round(dist, 2)
+                }
+        return None
 
     def get_lidar_scan(self, rx: float, ry: float, heading: float, num_beams: int = 36, max_range: float = 14.0) -> List[Dict[str, float]]:
         """Generates 360-degree LiDAR scan (laser range points)."""

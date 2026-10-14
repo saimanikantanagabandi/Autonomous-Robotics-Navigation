@@ -50,9 +50,17 @@ async def get_index():
         return FileResponse(index_file)
     return HTMLResponse("<h1>Autonomous UGV Mission Control Initializing...</h1>")
 
+class SARVisionModeRequest(BaseModel):
+    mode: str
+
+class SARActionRequest(BaseModel):
+    action: str
+    survivor_id: Optional[str] = None
+    event_type: Optional[str] = None
+
 @app.get("/api/map")
 async def get_bunker_map():
-    """Returns static bunker geometry, obstacles, and checkpoints."""
+    """Returns static bunker geometry, obstacles, hazards, and checkpoints."""
     return {
         "bounds": {
             "min_x": sim.bunker.min_x,
@@ -62,6 +70,9 @@ async def get_bunker_map():
         },
         "walls": sim.bunker.wall_segments,
         "pillars": sim.bunker.pillars,
+        "rubble_piles": getattr(sim.bunker, "rubble_piles", []),
+        "hazards": getattr(sim.bunker, "hazards", []),
+        "survivors": sim.survivors,
         "dropout_zone": sim.bunker.dropout_zone,
         "checkpoints": sim.bunker.default_checkpoints,
     }
@@ -69,6 +80,47 @@ async def get_bunker_map():
 @app.get("/api/state")
 async def get_state():
     return sim.get_state_payload()
+
+@app.get("/api/sar/survivors")
+async def get_sar_survivors():
+    return sim.survivors
+
+@app.get("/api/sar/alerts")
+async def get_sar_alerts():
+    return sim.sar_alerts
+
+@app.post("/api/sar/vision_mode")
+async def post_vision_mode(req: SARVisionModeRequest):
+    sim.set_vision_mode(req.mode)
+    return {"status": "ok", "mode": req.mode}
+
+@app.post("/api/sar/action")
+async def post_sar_action(req: SARActionRequest):
+    if req.action == "sweep":
+        sim.start_sar_sweep()
+        return {"status": "ok", "action": "sweep", "mode": sim.mode}
+    elif req.action == "rescue":
+        if not req.survivor_id:
+            raise HTTPException(status_code=400, detail="survivor_id required for rescue action")
+        res = sim.dispatch_rescue_team(req.survivor_id)
+        return res
+    elif req.action == "mark_rescued":
+        if not req.survivor_id:
+            raise HTTPException(status_code=400, detail="survivor_id required")
+        sim.mark_survivor_rescued(req.survivor_id)
+        return {"status": "ok", "survivor_id": req.survivor_id, "rescued": True}
+    elif req.action in ("extract", "rtb"):
+        sim.return_to_base()
+        return {"status": "ok", "action": "rtb"}
+    elif req.action == "disaster_event":
+        sim.trigger_disaster_event(req.event_type or "aftershock")
+        return {"status": "ok", "event": req.event_type}
+    else:
+        raise HTTPException(status_code=400, detail=f"Unknown SAR action: {req.action}")
+
+@app.get("/api/sar/manifest")
+async def get_sar_manifest():
+    return sim.export_sar_report_json()
 
 @app.post("/api/teleop")
 async def post_teleop(cmd: TeleopRequest):
@@ -88,6 +140,10 @@ async def mission_action(action: str):
         sim.reset_simulation()
     elif action == "patrol":
         sim.mode = "PATROL"
+    elif action == "sweep":
+        sim.start_sar_sweep()
+    elif action in ("rtb", "extract"):
+        sim.return_to_base()
     else:
         raise HTTPException(status_code=400, detail="Invalid action")
     return {"status": "ok", "action": action, "is_paused": sim.is_paused, "mode": sim.mode}
@@ -136,6 +192,24 @@ async def websocket_telemetry(websocket: WebSocket):
                         sim.reset_simulation()
                     elif action == "patrol":
                         sim.mode = "PATROL"
+                    elif action == "sweep":
+                        sim.start_sar_sweep()
+                    elif action in ("rtb", "extract"):
+                        sim.return_to_base()
+                elif cmd_type == "sar_mode":
+                    sim.set_vision_mode(data.get("mode", "AI_HUD"))
+                elif cmd_type == "sar_action":
+                    action = data.get("action")
+                    if action == "sweep":
+                        sim.start_sar_sweep()
+                    elif action == "rescue":
+                        sim.dispatch_rescue_team(data.get("survivor_id"))
+                    elif action == "mark_rescued":
+                        sim.mark_survivor_rescued(data.get("survivor_id"))
+                    elif action in ("rtb", "extract"):
+                        sim.return_to_base()
+                    elif action == "disaster_event":
+                        sim.trigger_disaster_event(data.get("event_type", "aftershock"))
                 elif cmd_type == "fault":
                     sim.set_faults(
                         data.get("wheel_slip"),
